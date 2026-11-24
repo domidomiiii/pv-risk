@@ -103,8 +103,8 @@ def render() -> None:
     fig.data[1].marker.color = "#3aa6a0"
     st.plotly_chart(fig, use_container_width=True)
     st.markdown(
-        '<div class="pv-note">AUPR 为主指标、AUC 为辅；排序不一致需并列报告。'
-        'LightGBM AUPR 点估计较高，但相对 ROA 不显著（差 0.028，CI [−0.027, +0.072] 跨 0）。</div>',
+        '<div class="pv-note">AUPR 为主指标、AUC 为辅；排序不一致时并列报告。'
+        'LightGBM AUPR 点估计较高，但相对 ROA 差异可忽略（差 0.028，CI [−0.027, +0.072] 跨 0）。</div>',
         unsafe_allow_html=True,
     )
 

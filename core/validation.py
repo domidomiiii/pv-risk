@@ -92,10 +92,10 @@ def validate_raw_inputs(raw: Dict[str, Any]) -> tuple[Dict[str, Optional[float]]
                 result.add(
                     "warning",
                     fld,
-                    f"「{label}」缺失：营收增速 growth 无法计算，其余指标不受影响。",
+                    f"「{label}」缺失：营收增速 growth 跳过计算，其余指标正常。",
                 )
             else:
-                result.add("error", fld, f"「{label}」缺失或非法，无法完成评分。")
+                result.add("error", fld, f"「{label}」缺失或非法，评分中止。")
 
     return cleaned, result
 

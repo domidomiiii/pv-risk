@@ -63,7 +63,7 @@ def parse_excel(file_like) -> Tuple[List[Dict[str, Any]], List[str]]:
     # 表头校验
     missing_cols = [c for c in REQUIRED_COLUMNS if c not in df.columns]
     if missing_cols:
-        errors.append(f"缺少必需列：{', '.join(missing_cols)}")
+        errors.append(f"必需列缺失：{', '.join(missing_cols)}")
         return [], errors
 
     records: List[Dict[str, Any]] = []

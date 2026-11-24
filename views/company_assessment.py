@@ -58,7 +58,7 @@ def _manual_input_flow() -> None:
             fiscal_year = st.number_input("财务数据年度", min_value=2000, max_value=2030,
                                           value=2024, step=1)
 
-        st.markdown("**财务报表数据**（合并报表·年报口径，单位统一即可）")
+        st.markdown("**财务报表数据**（合并报表·年报口径，单位统一）")
         fields: Dict[str, Any] = {}
         cols = st.columns(3)
         for i, f in enumerate(_RAW_FIELDS):
@@ -78,7 +78,7 @@ def _manual_input_flow() -> None:
 
     if submitted:
         assessment = assessment_service.assess_from_raw_inputs(
-            company_name=company_name or "未命名企业",
+            company_name=company_name or "缺省企业",
             stock_code=stock_code or None,
             fiscal_year=int(fiscal_year),
             raw_inputs=fields,
@@ -91,7 +91,7 @@ def _manual_input_flow() -> None:
 # ---------------------------------------------------------------------------
 def _excel_flow() -> None:
     st.markdown(
-        '<div class="pv-note">下载模板按列填写后上传，表头需一致；「上期营业收入」可留空。</div>',
+        '<div class="pv-note">下载模板按列填写后上传，表头与模板一致；「上期营业收入」留空。</div>',
         unsafe_allow_html=True,
     )
     tmpl_df = import_service.build_template_dataframe()
@@ -108,11 +108,11 @@ def _excel_flow() -> None:
         for e in errors:
             st.markdown(f'<div class="pv-warn">{e}</div>', unsafe_allow_html=True)
         if not records:
-            st.info("未解析到有效记录，请检查文件内容。")
+            st.info("解析结果为空，请检查文件内容。")
             return
 
         st.markdown(f"**解析到 {len(records)} 条记录**，选择其一进行评分：")
-        options = [f"{r['company_name']}（{r['stock_code'] or '无代码'} · {r['fiscal_year']}）"
+        options = [f"{r['company_name']}（{r['stock_code'] or '代码缺省'} · {r['fiscal_year']}）"
                    for r in records]
         chosen = st.selectbox("选择企业", options)
         idx = options.index(chosen)
@@ -166,7 +166,7 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
     st.divider()
 
     if not assessment.get("ok"):
-        st.error("输入有误，无法评分：")
+        st.error("输入有误，评分中止：")
         for issue in assessment.get("issues", []):
             st.markdown(f'<div class="pv-warn">[{issue["level"]}] {issue["message"]}</div>',
                         unsafe_allow_html=True)
@@ -183,7 +183,7 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
     with c_left:
         st.markdown(
             f'<div class="pv-card"><b style="font-size:1.15rem;">{assessment["company_name"]}</b>'
-            f'　<span style="color:#64748b;">{assessment.get("stock_code") or "无代码"}</span>'
+            f'　<span style="color:#64748b;">{assessment.get("stock_code") or "代码缺省"}</span>'
             f'　<span class="pv-tag">{assessment.get("fiscal_year")} 年度</span></div>',
             unsafe_allow_html=True,
         )
@@ -209,14 +209,14 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
                         unsafe_allow_html=True,
                     )
         else:
-            st.info("无正向贡献指标，风险相对偏低。")
+            st.info("各指标贡献均 ≤ 0，风险相对偏低。")
     with c_right:
         render_level_card(assessment["risk_level"], assessment["level_meaning"],
                           assessment["score"])
 
     st.markdown(
-        '<div class="pv-note">评分为 0—100 相对风险评分，未经概率校准，'
-        '<b>不代表次年亏损的绝对概率</b>，用于相对排序与初筛；「贡献」非因果。</div>',
+        '<div class="pv-note">评分为 0—100 相对风险评分，用于企业间排序与初筛；'
+        '「贡献」表示关联强度。</div>',
         unsafe_allow_html=True,
     )
 
@@ -266,7 +266,7 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
                 rid = repository.save_assessment(rec)
                 st.success(f"已保存（记录 ID = {rid}），可在「数据管理」查看。")
         else:
-            st.caption("内置验证案例不计入历史记录。")
+            st.caption("内置验证案例独立于历史记录。")
 
 
 def _render_case_verification(assessment: Dict[str, Any], case: Dict[str, Any]) -> None:
@@ -301,7 +301,7 @@ def _render_case_verification(assessment: Dict[str, Any], case: Dict[str, Any]) 
     if tol_ok:
         st.success("✅ 实时复算与表 7-3 一致。")
     else:
-        st.error("复算与论文不一致，请检查数据精度与计算顺序。")
+        st.error("复算与论文存在偏差，请检查数据精度与计算顺序。")
 
 
 def _fmt(v) -> str:

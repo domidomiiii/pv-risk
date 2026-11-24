@@ -55,7 +55,7 @@ def _tab_import() -> None:
     for e in errors:
         st.markdown(f'<div class="pv-warn">{e}</div>', unsafe_allow_html=True)
     if not records:
-        st.info("未解析到有效记录。")
+        st.info("解析结果为空。")
         return
 
     st.markdown(f"**解析到 {len(records)} 条记录，逐条评估：**")
@@ -126,7 +126,7 @@ def _tab_history() -> None:
     total = repository.count_assessments()
     st.caption(f"共 {total} 条记录。")
     if not records:
-        st.info("暂无历史记录。")
+        st.info("历史记录为空。")
         return
 
     list_df = pd.DataFrame([
