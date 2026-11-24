@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "source": "论文表 3-1 指标体系",
+    "note": "8 项财务指标依据金融学原理与既有文献确定，筛选过程未参考模型预测表现。'预期方向'指该指标升高时下一年亏损概率的变化方向。cip_fa 无明确先验方向，留待实证判断。",
+    "denominator_convention": "roa、reta、asset_turn 的分母均为期末总资产（期末口径）。",
+    "winsorize": "建模时按 1%/99% 分位缩尾后再标准化；缩尾分位点、标准化均值与标准差均只由训练集计算。"
+  },
+  "indicators": [
+    {
+      "order": 1,
+      "variable": "lev",
+      "name_cn": "资产负债率",
+      "dimension": "偿债能力",
+      "definition": "负债合计 / 资产总计",
+      "formula": "total_liabilities / total_assets",
+      "expected_direction": "+",
+      "inputs": ["total_liabilities", "total_assets"],
+      "zero_denominator_field": "total_assets"
+    },
+    {
+      "order": 2,
+      "variable": "cr",
+      "name_cn": "流动比率",
+      "dimension": "流动能力",
+      "definition": "流动资产合计 / 流动负债合计",
+      "formula": "current_assets / current_liabilities",
+      "expected_direction": "-",
+      "inputs": ["current_assets", "current_liabilities"],
+      "zero_denominator_field": "current_liabilities"
+    },
+    {
+      "order": 3,
+      "variable": "roa",
+      "name_cn": "ROA 代理指标",
+      "dimension": "盈利能力",
+      "definition": "归母净利润 / 期末资产总计（ROA 代理指标）",
+      "formula": "net_profit_attr / total_assets",
+      "expected_direction": "-",
+      "inputs": ["net_profit_attr", "total_assets"],
+      "zero_denominator_field": "total_assets",
+      "note": "论文自定义的盈利代理指标，不得替换为其他 ROA 算法。"
+    },
+    {
+      "order": 4,
+      "variable": "ocf",
+      "name_cn": "经营现金流营收比",
+      "dimension": "现金流",
+      "definition": "经营活动现金流量净额 / 营业收入",
+      "formula": "net_operating_cashflow / revenue",
+      "expected_direction": "-",
+      "inputs": ["net_operating_cashflow", "revenue"],
+      "zero_denominator_field": "revenue"
+    },
+    {
+      "order": 5,
+      "variable": "cip_fa",
+      "name_cn": "在建工程占比",
+      "dimension": "扩张程度",
+      "definition": "在建工程净额 / 固定资产净额",
+      "formula": "construction_in_progress / fixed_assets_net",
+      "expected_direction": "待检验",
+      "inputs": ["construction_in_progress", "fixed_assets_net"],
+      "zero_denominator_field": "fixed_assets_net"
+    },
+    {
+      "order": 6,
+      "variable": "reta",
+      "name_cn": "未分配利润资产比",
+      "dimension": "未分配利润资产比",
+      "definition": "未分配利润 / 期末资产总计",
+      "formula": "retained_earnings / total_assets",
+      "expected_direction": "-",
+      "inputs": ["retained_earnings", "total_assets"],
+      "zero_denominator_field": "total_assets",
+      "note": "作为留存收益的代理变量；Altman Z'' 的 X2 采用同一口径。"
+    },
+    {
+      "order": 7,
+      "variable": "asset_turn",
+      "name_cn": "总资产周转率",
+      "dimension": "营运能力",
+      "definition": "营业收入 / 期末资产总计",
+      "formula": "revenue / total_assets",
+      "expected_direction": "-",
+      "inputs": ["revenue", "total_assets"],
+      "zero_denominator_field": "total_assets"
+    },
+    {
+      "order": 8,
+      "variable": "growth",
+      "name_cn": "营收增速",
+      "dimension": "成长性",
+      "definition": "营业收入同比增速 = 本期营业收入 / 上期营业收入 - 1",
+      "formula": "revenue / revenue_prev - 1",
+      "expected_direction": "-",
+      "inputs": ["revenue", "revenue_prev"],
+      "zero_denominator_field": "revenue_prev",
+      "note": "需要上一年度营业收入。"
+    }
+  ],
+  "raw_input_fields": [
+    {"field": "total_assets", "name_cn": "资产总计", "statement": "资产负债表"},
+    {"field": "total_liabilities", "name_cn": "负债合计", "statement": "资产负债表"},
+    {"field": "current_assets", "name_cn": "流动资产合计", "statement": "资产负债表"},
+    {"field": "current_liabilities", "name_cn": "流动负债合计", "statement": "资产负债表"},
+    {"field": "construction_in_progress", "name_cn": "在建工程净额", "statement": "资产负债表"},
+    {"field": "fixed_assets_net", "name_cn": "固定资产净额", "statement": "资产负债表"},
+    {"field": "retained_earnings", "name_cn": "未分配利润", "statement": "资产负债表"},
+    {"field": "net_profit_attr", "name_cn": "归母净利润", "statement": "利润表"},
+    {"field": "revenue", "name_cn": "营业收入", "statement": "利润表"},
+    {"field": "revenue_prev", "name_cn": "上期营业收入", "statement": "利润表", "note": "用于计算 growth"},
+    {"field": "net_operating_cashflow", "name_cn": "经营活动现金流量净额", "statement": "现金流量表"}
+  ]
+}
