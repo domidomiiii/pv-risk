@@ -25,8 +25,7 @@ _VALIDATION_CASE = load_risk_levels()["validation_case"]
 def render() -> None:
     st.markdown("<h1>企业风险评估</h1>", unsafe_allow_html=True)
     st.markdown(
-        '<div class="pv-subtitle">基于论文第 7 章 Firth Logit 评分卡，输入企业财务数据，'
-        '实时计算风险评分、等级与主要风险来源。</div>',
+        '<div class="pv-subtitle">输入财务数据，实时计算风险评分、等级与主要风险来源。</div>',
         unsafe_allow_html=True,
     )
 
@@ -92,8 +91,7 @@ def _manual_input_flow() -> None:
 # ---------------------------------------------------------------------------
 def _excel_flow() -> None:
     st.markdown(
-        '<div class="pv-note">下载模板，按列填入企业财务报表数据后上传。'
-        '表头需与模板一致；「上期营业收入」用于计算 growth，可留空。</div>',
+        '<div class="pv-note">下载模板按列填写后上传，表头需一致；「上期营业收入」可留空。</div>',
         unsafe_allow_html=True,
     )
     tmpl_df = import_service.build_template_dataframe()
@@ -145,9 +143,8 @@ def _validation_case_flow() -> None:
         f'<div class="pv-card"><b>内置验证案例：{case["company_name"]}（{case["stock_code"]}）'
         f'{case["year"]} 年度</b><br/>'
         f'<span style="color:#64748b;font-size:0.85rem;">'
-        f'论文表 7-3 直接给出八项指标原始值，系统按论文公式实时复算，验证是否得到 '
-        f'logit={case["expected_logit"]}、score={case["expected_score"]}、{case["expected_level"]} 级。'
-        f'该案例 2025 年归母净利润为负（actual_loss={case["actual_loss_next_year"]}）。</span></div>',
+        f'按表 7-3 八项指标实时复算，验证 logit={case["expected_logit"]}、score={case["expected_score"]}、'
+        f'{case["expected_level"]} 级；次年归母净利润为负。</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -169,7 +166,7 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
     st.divider()
 
     if not assessment.get("ok"):
-        st.error("输入数据存在问题，无法生成评分（不静默产出错误结果）：")
+        st.error("输入有误，无法评分：")
         for issue in assessment.get("issues", []):
             st.markdown(f'<div class="pv-warn">[{issue["level"]}] {issue["message"]}</div>',
                         unsafe_allow_html=True)
@@ -212,15 +209,14 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
                         unsafe_allow_html=True,
                     )
         else:
-            st.info("无正向贡献指标（所有指标贡献 ≤ 0），风险相对偏低。")
+            st.info("无正向贡献指标，风险相对偏低。")
     with c_right:
         render_level_card(assessment["risk_level"], assessment["level_meaning"],
                           assessment["score"])
 
     st.markdown(
-        '<div class="pv-note">评分说明：该分值为 0—100 的相对风险评分，未经概率校准，'
-        '<b>不能直接解释为企业下一年度亏损的绝对概率</b>，宜用于企业间相对排序与初步筛查。'
-        '「贡献」指指标对模型输出的影响，不代表因果关系。</div>',
+        '<div class="pv-note">评分为 0—100 相对风险评分，未经概率校准，'
+        '<b>不代表次年亏损的绝对概率</b>，用于相对排序与初筛；「贡献」非因果。</div>',
         unsafe_allow_html=True,
     )
 
@@ -242,8 +238,8 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
 
     if assessment.get("missing_variables"):
         st.markdown(
-            f'<div class="pv-warn">以下指标缺失，其贡献按 0 计入：'
-            f'{", ".join(assessment["missing_variables"])}。评分结果可能不完整。</div>',
+            f'<div class="pv-warn">以下指标缺失，贡献按 0 计入：'
+            f'{", ".join(assessment["missing_variables"])}。</div>',
             unsafe_allow_html=True,
         )
 
@@ -275,7 +271,7 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
 
 def _render_case_verification(assessment: Dict[str, Any], case: Dict[str, Any]) -> None:
     """将实时复算结果与论文表 7-3 公布值逐项对照。"""
-    st.subheader("论文表 7-3 复算验证")
+    st.subheader("表 7-3 复算验证")
     rows = []
     for var in case["raw_indicators"]:
         rows.append({
@@ -303,9 +299,9 @@ def _render_case_verification(assessment: Dict[str, Any], case: Dict[str, Any]) 
         and [s["variable"] for s in assessment["top_risk_sources"]] == case["expected_top_risk_sources"]
     )
     if tol_ok:
-        st.success("✅ 系统按论文公式实时复算，结果与论文表 7-3 一致（评分为真实计算，非写死）。")
+        st.success("✅ 实时复算与表 7-3 一致。")
     else:
-        st.error("复算结果与论文不一致，请检查数据精度、缩尾、标准化、系数与计算顺序。")
+        st.error("复算与论文不一致，请检查数据精度与计算顺序。")
 
 
 def _fmt(v) -> str:

@@ -34,7 +34,7 @@ def render_level_card(level: str, meaning: str, score: float) -> None:
           <div class="pv-level-badge" style="background-color:{color};margin:8px 0;">
             {level} · {meaning}
           </div>
-          <div style="color:#64748b;font-size:0.85rem;margin-top:10px;">风险评分（0—100 相对值）</div>
+          <div style="color:#64748b;font-size:0.85rem;margin-top:10px;">风险评分（0—100）</div>
           <div style="font-size:2.2rem;font-weight:700;color:#0f172a;">{score:.1f}</div>
         </div>
         """,

@@ -37,9 +37,8 @@ TABS = [
 def render() -> None:
     st.markdown("<h1>实证研究</h1>", unsafe_allow_html=True)
     st.markdown(
-        '<div class="pv-subtitle">完整呈现论文第 3—7 章研究内容。'
-        '<span class="pv-paper-badge">论文实证结果</span> 标记的内容为论文已公布数据，'
-        '非系统实时重训所得。</div>',
+        '<div class="pv-subtitle">第 3—7 章研究内容。'
+        '<span class="pv-paper-badge">论文实证结果</span> = 论文已公布数据。</div>',
         unsafe_allow_html=True,
     )
     tab_a, tab_b, tab_c, tab_d, tab_e = st.tabs(TABS)
@@ -83,17 +82,16 @@ def _tab_design() -> None:
     st.markdown("**表 3-1 指标体系**", unsafe_allow_html=False)
     st.dataframe(ind_df, use_container_width=True, hide_index=True)
     st.markdown(
-        '<div class="pv-note">"预期方向"指该指标升高时下一年亏损概率的变化方向。'
-        'roa、reta、asset_turn 分母均为期末总资产。cip_fa 无明确先验方向，留待实证判断。</div>',
+        '<div class="pv-note">"预期方向"= 指标升高时次年亏损概率的变化方向；'
+        'roa、reta、asset_turn 分母为期末总资产；cip_fa 方向由实证确定。</div>',
         unsafe_allow_html=True,
     )
 
     st.subheader("盈利恶化标签定义")
     st.markdown(
-        f'<div class="pv-card">标签：{summ["label"]}。建模样本正例 {summ["positive_cases"]} 个，'
-        f'占 {summ["positive_rate"]}。标签的分子是下一年归母净利润，ROA 的分子是当期归母净利润，'
-        '二者会计科目相邻——不构成数据泄漏（预测时点当期 ROA 已可得），'
-        '但意味着 ROA 具有先验预测优势。</div>',
+        f'<div class="pv-card">标签：{summ["label"]}；正例 {summ["positive_cases"]} 个'
+        f'（{summ["positive_rate"]}）。标签用下一年归母净利润、ROA 用当期归母净利润，'
+        '不构成泄漏，但 ROA 有先验优势。</div>',
         unsafe_allow_html=True,
     )
 
@@ -151,8 +149,8 @@ def _tab_models() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="pv-note">Firth 惩罚似然在完全/准完全分离时仍有有限解，并减小小样本系数偏误。'
-        'Firth Logit 主要用于风险来源解释与评分卡构建，<b>并非论文中预测效果最好的模型</b>。</div>',
+        '<div class="pv-note">Firth 惩罚似然在分离情形下仍有有限解、减小小样本偏误；'
+        '用于风险来源解释与评分卡，<b>非预测最优模型</b>。</div>',
         unsafe_allow_html=True,
     )
 
@@ -198,10 +196,8 @@ def _tab_models() -> None:
 
     st.subheader("模型选择与功能分工")
     st.markdown(
-        '<div class="pv-note">Firth Logit 代表可解释性较强的多变量概率模型，用于分析条件关联方向、'
-        '显著性及风险来源；LightGBM 代表能处理非线性与交互的树模型，用于检验非线性建模能否提供 '
-        'ROA 基准与线性模型之外的样本外排序信息；单变量 ROA 给出仅凭一个透明盈利指标可达的识别水平参照。'
-        '按 Lessmann 等（2015）结论，模型比较应明确功能分工，而非追求单一指标最高值。</div>',
+        '<div class="pv-note">Firth Logit 负责可解释的条件关联与风险来源；LightGBM 检验非线性与交互的'
+        '样本外增量；单变量 ROA 为透明基准。模型比较按功能分工，不追求单一指标最高。</div>',
         unsafe_allow_html=True,
     )
 
@@ -227,10 +223,10 @@ def _tab_results() -> None:
     st.plotly_chart(fig, use_container_width=True)
     sup = t51["lev_suppression_evidence"]
     st.markdown(
-        f'<div class="pv-note"><b>lev 负系数的抑制效应说明：</b>单变量估计系数 {sup["univariate_coef"]}'
-        f'（p={sup["univariate_p"]}），加入 roa、ocf 后转负，全变量设定为 {sup["full_model_coef"]}；'
-        f'VIF 介于 {sup["vif_range"]}，lev 与 roa 相关系数 {sup["lev_roa_corr"]}，'
-        '方向变化更可能源于抑制效应，不作因果解读。</div>',
+        f'<div class="pv-note"><b>lev 负系数（抑制效应）：</b>单变量系数 {sup["univariate_coef"]}'
+        f'（p={sup["univariate_p"]}），加入 roa、ocf 后转负，全变量 {sup["full_model_coef"]}；'
+        f'VIF {sup["vif_range"]}，lev 与 roa 相关 {sup["lev_roa_corr"]}。'
+        '方向变化归因于抑制效应，不作因果解读。</div>',
         unsafe_allow_html=True,
     )
 
@@ -264,17 +260,16 @@ def _tab_results() -> None:
     ci = t54["bootstrap_ci"]
     st.markdown(
         f'<div class="pv-note"><b>配对 Bootstrap 95% CI：</b>'
-        f'AUPR（类别加权 LGB vs ROA）差值 {ci["aupr_lgb_cat_vs_roa"]["diff"]}，'
-        f'CI {ci["aupr_lgb_cat_vs_roa"]["ci95"]}（跨 0，未达显著）；'
-        f'AUC（ROA vs Firth）差值 {ci["auc_roa_vs_firth"]["diff"]}，'
-        f'CI {ci["auc_roa_vs_firth"]["ci95"]}（不跨 0，ROA 显著优于 Firth）；'
-        f'AUC（ROA vs 类别加权 LGB）差值 {ci["auc_roa_vs_lgb_cat"]["diff"]}，'
-        f'CI {ci["auc_roa_vs_lgb_cat"]["ci95"]}（未达显著）。</div>',
+        f'AUPR（类别加权 LGB vs ROA）差 {ci["aupr_lgb_cat_vs_roa"]["diff"]}，'
+        f'CI {ci["aupr_lgb_cat_vs_roa"]["ci95"]}（跨 0，不显著）；'
+        f'AUC（ROA vs Firth）差 {ci["auc_roa_vs_firth"]["diff"]}，'
+        f'CI {ci["auc_roa_vs_firth"]["ci95"]}（不跨 0，ROA 更优）；'
+        f'AUC（ROA vs 类别加权 LGB）差 {ci["auc_roa_vs_lgb_cat"]["diff"]}，'
+        f'CI {ci["auc_roa_vs_lgb_cat"]["ci95"]}（不显著）。</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="pv-warn">图 5-1（ROC / PR 曲线）：论文仅公布各模型 AUC/AUPR 汇总值，'
-        '未提供逐点曲线数据，故此处以上表与柱状图呈现，不绘制示意曲线。</div>',
+        '<div class="pv-warn">图 5-1（ROC/PR 曲线）仅有汇总值、无逐点数据，以上表与柱状图呈现。</div>',
         unsafe_allow_html=True,
     )
 
@@ -297,9 +292,8 @@ def _tab_results() -> None:
     for kf in t55["key_findings"]:
         st.markdown(f"- {kf}")
     st.markdown(
-        '<div class="pv-note">模型 A（历史模型，固定 2014—2022 窗口）与模型 C（更新模型，'
-        '滚动扩展至 2023）的 AUC 差异（0.715 对 0.801）同时包含训练信息更新与时期变化，'
-        '不能单独识别冲击期样本的因果增量。</div>',
+        '<div class="pv-note">模型 A（固定 2014—2022）与模型 C（滚动至 2023）的 AUC 差'
+        '（0.715 vs 0.801）混合了训练更新与时期变化，不能单独归因。</div>',
         unsafe_allow_html=True,
     )
 
@@ -314,11 +308,9 @@ def _tab_results() -> None:
         use_container_width=True,
     )
     st.markdown(
-        '<div class="pv-warn">图 5-2（SHAP 值分布）与图 5-3（资产负债率 SHAP 依赖图）：'
-        '系统无 LightGBM 模型文件，不能实时计算逐观测 SHAP，论文亦未提供逐点数据，'
-        '故仅以表 5-6 的重要性排序呈现。图 5-3 的关键结论（文字）：资产负债率与风险非单调，'
-        '标准化值 0.5 附近（负债率约 55%）SHAP 由正转负，超过 1.0（约 65% 以上）进一步下降；'
-        '以表 5-2 边际亏损率为准，高杠杆组具有较高边际风险。</div>',
+        '<div class="pv-warn">图 5-2/5-3 无模型文件与逐点数据，仅以表 5-6 呈现。'
+        '图 5-3 结论：资产负债率与风险非单调，标准化值 0.5 附近（负债率约 55%）SHAP 由正转负，'
+        '超 1.0（约 65% 以上）进一步下降；边际风险以表 5-2 为准。</div>',
         unsafe_allow_html=True,
     )
 
@@ -411,11 +403,10 @@ def _tab_robustness() -> None:
     render_paper_table(t65)
     ci2 = t65["bootstrap_ci_label2"]
     st.markdown(
-        f'<div class="pv-note"><b>标签 2</b>（{t65["label_2"]}）下配对 Bootstrap：'
-        f'LightGBM vs ROA 的 AUPR 差值 {ci2["lgb_vs_roa_aupr"]["diff"]}，'
-        f'CI {ci2["lgb_vs_roa_aupr"]["ci95"]}；Firth vs ROA 差值 '
-        f'{ci2["firth_vs_roa_aupr"]["diff"]}，CI {ci2["firth_vs_roa_aupr"]["ci95"]}，'
-        '均跨 0。属探索性证据，尚不足以断言多变量模型在该场景确有稳定增量。</div>',
+        f'<div class="pv-note"><b>标签 2</b>（{t65["label_2"]}）配对 Bootstrap：'
+        f'LGB vs ROA AUPR 差 {ci2["lgb_vs_roa_aupr"]["diff"]}，CI {ci2["lgb_vs_roa_aupr"]["ci95"]}；'
+        f'Firth vs ROA 差 {ci2["firth_vs_roa_aupr"]["diff"]}，CI {ci2["firth_vs_roa_aupr"]["ci95"]}，'
+        '均跨 0，属探索性证据。</div>',
         unsafe_allow_html=True,
     )
 
@@ -438,9 +429,8 @@ def _tab_scorecard() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="pv-note">Firth Logit 的 AUPR（0.683）低于单变量 ROA（0.762）与 LightGBM 各版本'
-        '（0.785—0.790）；若使用者只需排序，直接采用 −ROA 更简便、精度更高。'
-        'Firth 评分卡的价值在于回答"风险来自哪些指标"，这是单一指标给不出的。</div>',
+        '<div class="pv-note">Firth AUPR（0.683）低于 ROA（0.762）与 LightGBM（0.785—0.790）；'
+        '只需排序时用 −ROA 更简便。Firth 评分卡的价值在回答"风险来自哪些指标"。</div>',
         unsafe_allow_html=True,
     )
 
@@ -474,7 +464,7 @@ def _tab_scorecard() -> None:
         "<span class='pv-paper-badge'>论文实证结果</span>", unsafe_allow_html=True)
     st.dataframe(param_df, use_container_width=True, hide_index=True)
     st.markdown(
-        '<div class="pv-note">均值和标准差为缩尾后的数值，即先按 P1/P99 截断再计算，顺序不可颠倒。</div>',
+        '<div class="pv-note">均值与标准差为缩尾后数值（先截断再计算），顺序不可颠倒。</div>',
         unsafe_allow_html=True,
     )
 
@@ -491,9 +481,8 @@ def _tab_scorecard() -> None:
     case = rl["validation_case"]
     st.markdown(
         f'<div class="pv-card">案例：{case["company_name"]}（{case["stock_code"]}）'
-        f'{case["year"]} 年度，{case["year"]+1} 年归母净利润为负。'
-        f'请在「企业风险评估 → 内置验证案例」中查看系统按论文公式的实时复算结果'
-        f'（论文值：logit={case["expected_logit"]}、score={case["expected_score"]}、'
+        f'{case["year"]} 年度，次年归母净利润为负。实时复算见「企业风险评估 → 内置验证案例」'
+        f'（论文值 logit={case["expected_logit"]}、score={case["expected_score"]}、'
         f'{case["expected_level"]} 级）。</div>',
         unsafe_allow_html=True,
     )

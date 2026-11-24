@@ -35,9 +35,8 @@ def render() -> None:
 def _tab_import() -> None:
     st.subheader("Excel 财务数据导入")
     st.markdown(
-        '<div class="pv-note">下载模板 → 按列填入企业财务报表数据 → 上传。'
-        '系统对每条记录做完整性检查（缺失字段、分母为零），'
-        '通过检查的记录批量评分并可保存至历史。</div>',
+        '<div class="pv-note">下载模板 → 按列填写 → 上传；系统做完整性检查（缺失、分母为零），'
+        '通过者批量评分并可保存。</div>',
         unsafe_allow_html=True,
     )
     tmpl_df = import_service.build_template_dataframe()
@@ -127,7 +126,7 @@ def _tab_history() -> None:
     total = repository.count_assessments()
     st.caption(f"共 {total} 条记录。")
     if not records:
-        st.info("暂无历史记录。请在「企业风险评估」或「Excel 导入」中保存评估结果。")
+        st.info("暂无历史记录。")
         return
 
     list_df = pd.DataFrame([
@@ -193,11 +192,9 @@ def _render_history_detail(detail: dict) -> None:
 
 # ---------------------------------------------------------------------------
 def _tab_paper_data() -> None:
-    st.subheader("论文实证数据统一管理")
+    st.subheader("论文实证数据")
     st.markdown(
-        '<div class="pv-note">以下为系统内置的论文实证数据配置文件（只读浏览），'
-        '展示各表来源与口径。全部为论文已公布结果，标记为「论文实证结果」，'
-        '系统不基于原始 765 条观测重训模型。</div>',
+        '<div class="pv-note">内置论文实证数据配置（只读浏览）。</div>',
         unsafe_allow_html=True,
     )
     sources = {

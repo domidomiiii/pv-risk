@@ -41,9 +41,9 @@ def render_sidebar() -> str:
         st.markdown(
             """
             <div class="pv-note" style="font-size:0.76rem;">
-            评分卡载体：Firth Logit<br/>
-            阈值口径：论文表 7-1（训练集 n=551）<br/>
-            输出为 0—100 相对风险评分，未经概率校准。
+            评分卡：Firth Logit<br/>
+            阈值：表 7-1<br/>
+            输出为 0—100 相对评分。
             </div>
             """,
             unsafe_allow_html=True,

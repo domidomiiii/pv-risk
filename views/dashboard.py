@@ -34,7 +34,7 @@ def render() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        f'<div class="pv-note">系统定位：{proj["positioning"]}</div>',
+        f'<div class="pv-note">{proj["positioning"]}</div>',
         unsafe_allow_html=True,
     )
 
@@ -103,14 +103,13 @@ def render() -> None:
     fig.data[1].marker.color = "#3aa6a0"
     st.plotly_chart(fig, use_container_width=True)
     st.markdown(
-        '<div class="pv-note">AUPR 为主指标、AUC 为辅助指标；两者排序不一致需并列报告。'
-        'LightGBM 各版本 AUPR 点估计较高，但相对 ROA 的差异未达统计显著'
-        '（类别加权 vs ROA 差值 0.028，95% CI [−0.027, +0.072]，跨 0）。</div>',
+        '<div class="pv-note">AUPR 为主指标、AUC 为辅；排序不一致需并列报告。'
+        'LightGBM AUPR 点估计较高，但相对 ROA 不显著（差 0.028，CI [−0.027, +0.072] 跨 0）。</div>',
         unsafe_allow_html=True,
     )
 
     # 主要结论
-    st.subheader("论文主要结论")
+    st.subheader("主要结论")
     for c in ov["main_conclusions"]:
         with st.expander(f"结论 {c['id']}：{c['title']}", expanded=(c["id"] == 1)):
             st.write(c["detail"])
