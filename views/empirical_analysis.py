@@ -177,7 +177,7 @@ def _tab_models() -> None:
         f'X1={z["variables"]["X1"]}；X2={z["variables"]["X2"]}；'
         f'X3={z["variables"]["X3"]}；X4={z["variables"]["X4"]}。<br/>'
         f'{z["risk_score_direction"]}<br/>'
-        f'<span style="color:#64748b;font-size:0.84rem;">{z["caveat"]}</span></div>',
+        f'<span style="color:#8a857b;font-size:0.84rem;">{z["caveat"]}</span></div>',
         unsafe_allow_html=True,
     )
     roa = mp["univariate_roa_baseline"]
@@ -218,7 +218,7 @@ def _tab_results() -> None:
         values=coef_df["系数"].tolist(),
         title="表 5-1：Firth Logit 各指标系数（训练集 n=551）",
         y_title="系数",
-        color="#3b82f6",
+        color="#ff4d00",
     )
     st.plotly_chart(fig, use_container_width=True)
     sup = t51["lev_suppression_evidence"]
@@ -236,7 +236,7 @@ def _tab_results() -> None:
     df52 = table_from_spec(t52)
     st.plotly_chart(
         single_bar(df52["负债率区间"].tolist(), df52["亏损率"].tolist(),
-                   "表 5-2：各杠杆区间亏损率", y_title="亏损率", color="#e08a2e"),
+                   "表 5-2：各杠杆区间亏损率", y_title="亏损率", color="#ff4d00"),
         use_container_width=True,
     )
 
@@ -254,8 +254,8 @@ def _tab_results() -> None:
         title="表 5-4：各模型 AUPR / AUC 对比（测试集 n=214）",
         y_title="指标值", height=460,
     )
-    fig54.data[0].marker.color = "#3b82f6"
-    fig54.data[1].marker.color = "#3aa6a0"
+    fig54.data[0].marker.color = "#ff4d00"
+    fig54.data[1].marker.color = "#f4f1eb"
     st.plotly_chart(fig54, use_container_width=True)
     ci = t54["bootstrap_ci"]
     st.markdown(
@@ -304,7 +304,7 @@ def _tab_results() -> None:
     st.plotly_chart(
         single_bar(df56["特征"].tolist(), df56["平均绝对 SHAP 值"].tolist(),
                    "表 5-6：SHAP 特征重要性排序（类别加权 LightGBM）",
-                   y_title="平均绝对 SHAP 值", color="#9b59b6"),
+                   y_title="平均绝对 SHAP 值", color="#ff4d00"),
         use_container_width=True,
     )
     st.markdown(
@@ -325,9 +325,9 @@ def _tab_results() -> None:
         title="表 5-7 / 图 5-4：各模型平均预测概率与 Brier（实际亏损率 44.86%）",
         y_title="数值", height=440,
     )
-    fig57.data[0].marker.color = "#3b82f6"
-    fig57.data[1].marker.color = "#e08a2e"
-    fig57.add_hline(y=0.4486, line_dash="dash", line_color="#d64545",
+    fig57.data[0].marker.color = "#ff4d00"
+    fig57.data[1].marker.color = "#f4f1eb"
+    fig57.add_hline(y=0.4486, line_dash="dash", line_color="#f4f1eb",
                     annotation_text="实际亏损率 44.86%")
     st.plotly_chart(fig57, use_container_width=True)
     st.markdown(
@@ -382,8 +382,8 @@ def _tab_robustness() -> None:
         title="表 6-3：引入年份固定效应前后系数对比（全样本 n=765）",
         y_title="系数", height=440,
     )
-    fig63.data[0].marker.color = "#8fa3b8"
-    fig63.data[1].marker.color = "#3b82f6"
+    fig63.data[0].marker.color = "#8a857b"
+    fig63.data[1].marker.color = "#ff4d00"
     st.plotly_chart(fig63, use_container_width=True)
 
     st.subheader("6.3 变量数量与样本外表现")

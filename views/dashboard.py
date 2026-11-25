@@ -10,6 +10,7 @@ import streamlit as st
 from components.charts import MODEL_COLORS, grouped_bar
 from components.metric_cards import render_metric_row
 from components.tables import table_from_spec
+from components.theme import marquee_html, stagger_html
 from core.config_loader import load_research_overview, load_research_results
 
 
@@ -17,17 +18,19 @@ def render() -> None:
     ov = load_research_overview()
     rr = load_research_results()
     proj = ov["project"]
+    motion = st.session_state.get("pv_motion", True)
 
-    # 标题区
-    st.markdown(
-        f"""
-        <div>
-          <h1 style="margin-bottom:2px;">{proj['name']} · {proj['full_name']}</h1>
-          <div class="pv-subtitle">{proj['paper_title']}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # 标题区：逐字入场 + 核心数字跑马灯
+    st.markdown('<div class="pv-label">Solar PV Listed Companies · Financial Risk Warning</div>',
+                unsafe_allow_html=True)
+    st.markdown(stagger_html(proj["full_name"]), unsafe_allow_html=True)
+    st.markdown(f'<div class="pv-subtitle">{proj["paper_title"]}</div>', unsafe_allow_html=True)
+    marquee_items = [(n["label"], f'{n["value"]}{n.get("unit", "")}') for n in ov["core_numbers"]]
+    marquee_items += [
+        ("训练集亏损率", ov["sample_split"]["train"]["loss_rate"]),
+        ("测试集亏损率", ov["sample_split"]["test"]["loss_rate"]),
+    ]
+    st.markdown(marquee_html(marquee_items, off=not motion), unsafe_allow_html=True)
     st.markdown(
         f'<div class="pv-card"><b>研究对象：</b>{proj["research_object"]}　|　'
         f'<b>研究目标：</b>{proj["research_goal"]}</div>',
@@ -56,7 +59,7 @@ def render() -> None:
                 extra = f"<br/>风险分数 = {m['risk_score']}"
             st.markdown(
                 f'<div class="pv-card"><b>{m["name"]}</b><br/>'
-                f'<span style="color:#64748b;font-size:0.85rem;">{m["role"]}</span>'
+                f'<span style="color:#8a857b;font-size:0.85rem;">{m["role"]}</span>'
                 f'{extra}</div>',
                 unsafe_allow_html=True,
             )
@@ -70,14 +73,14 @@ def render() -> None:
         st.markdown(
             f'<div class="pv-card"><b>训练集 {tr["period"]}</b><br/>'
             f'{tr["obs"]} 观测 · {tr["positives"]} 正例 · 亏损率 {tr["loss_rate"]}<br/>'
-            f'<span style="color:#64748b;font-size:0.82rem;">{tr["note"]}</span></div>',
+            f'<span style="color:#8a857b;font-size:0.82rem;">{tr["note"]}</span></div>',
             unsafe_allow_html=True,
         )
     with c2:
         st.markdown(
             f'<div class="pv-card"><b>测试集 {te["period"]}</b><br/>'
             f'{te["obs"]} 观测 · {te["positives"]} 正例 · 亏损率 {te["loss_rate"]}<br/>'
-            f'<span style="color:#64748b;font-size:0.82rem;">{te["note"]}</span></div>',
+            f'<span style="color:#8a857b;font-size:0.82rem;">{te["note"]}</span></div>',
             unsafe_allow_html=True,
         )
     st.markdown(f'<div class="pv-note">{split["validation_design"]}</div>', unsafe_allow_html=True)
@@ -99,8 +102,8 @@ def render() -> None:
         height=440,
     )
     # 两个系列用不同颜色
-    fig.data[0].marker.color = "#3b82f6"
-    fig.data[1].marker.color = "#3aa6a0"
+    fig.data[0].marker.color = "#ff4d00"
+    fig.data[1].marker.color = "#f4f1eb"
     st.plotly_chart(fig, use_container_width=True)
     st.markdown(
         '<div class="pv-note">AUPR 为主指标、AUC 为辅；排序不一致时并列报告。'

@@ -26,16 +26,16 @@ def render_metric_row(items: List[dict], cols_per_row: int = 3) -> None:
 def render_level_card(level: str, meaning: str, score: float) -> None:
     """大号风险等级 + 评分卡片。"""
     from components.theme import LEVEL_COLORS
-    color = LEVEL_COLORS.get(level, "#3b82f6")
+    color = LEVEL_COLORS.get(level, "#ff4d00")
     st.markdown(
         f"""
         <div class="pv-card" style="text-align:center;">
-          <div style="color:#64748b;font-size:0.85rem;">风险等级</div>
-          <div class="pv-level-badge" style="background-color:{color};margin:8px 0;">
+          <div style="color:#8a857b;font-size:0.85rem;">风险等级</div>
+          <div class="pv-level-badge" style="color:{color};margin:8px 0;">
             {level} · {meaning}
           </div>
-          <div style="color:#64748b;font-size:0.85rem;margin-top:10px;">风险评分（0—100）</div>
-          <div style="font-size:2.2rem;font-weight:700;color:#0f172a;">{score:.1f}</div>
+          <div style="color:#8a857b;font-size:0.85rem;margin-top:10px;">风险评分（0—100）</div>
+          <div style="font-size:2.2rem;font-weight:700;color:#f4f1eb;">{score:.1f}</div>
         </div>
         """,
         unsafe_allow_html=True,

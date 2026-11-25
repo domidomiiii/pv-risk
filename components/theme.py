@@ -1,116 +1,253 @@
-"""全局主题与样式：浅色高级风（高对比、简洁、清晰）。
+"""全局主题与样式：动力学排印（深色舞台 + 可变字体动效）。
 
-配色方案：
-    - 主内容区：白 / 浅冷灰底，深墨蓝正文（高对比，文字清晰）
-    - 侧边栏：浅色，与主区统一，保证导航文字高对比
-    - 强调色：精致蓝 #2563eb
-    - 风险等级：绿(A) / 青(B) / 橙(C) / 红(D)
-统一注入 CSS，供各页面复用。避免渐变、霓虹、3D、粒子动画等装饰。
+配色方案（design.md 令牌）：
+    - 舞台底 Ink Black #0b0b0c，卡片 Panel #141416
+    - 文字 Bone #f4f1eb，次级 Muted Grey #8a857b
+    - 唯一强调色 Signal Orange #ff4d00：主 CTA、关键词与 hover
+    - 边框 rgba(244,241,235,0.12)，圆角 2px
+动效纪律：只动 transform / opacity / font-variation-settings；
+入场 expo-out 0.7—0.9s；跑马灯 24s linear 无缝循环并提供暂停；
+prefers-reduced-motion 直接终态。风险等级 A—D 为数据语义色，不作品牌强调。
 """
 from __future__ import annotations
 
+import html
+
 import streamlit as st
 
-# 风险等级配色（浅色底下仍保证徽章白字可读）
+# 设计令牌
+INK_BLACK = "#0b0b0c"
+BONE = "#f4f1eb"
+SIGNAL_ORANGE = "#ff4d00"
+PANEL = "#141416"
+MUTED_GREY = "#8a857b"
+BORDER = "rgba(244,241,235,0.12)"
+
+# 风险等级配色（深色底语义色，_outline 徽章用）
 LEVEL_COLORS = {
-    "A": "#16a34a",   # 绿 低风险
-    "B": "#0d9488",   # 青 中低风险
-    "C": "#d97706",   # 橙 中高风险
-    "D": "#dc2626",   # 红 高风险
+    "A": "#4ade80",   # 绿 低风险
+    "B": "#2dd4bf",   # 青 中低风险
+    "C": "#fbbf24",   # 橙 中高风险
+    "D": "#f87171",   # 红 高风险
 }
 
-# Plotly 浅色模板配色
-PLOT_ACCENT = "#2563eb"
-PLOT_BG = "#ffffff"
-PLOT_PANEL = "#ffffff"
-PLOT_GRID = "#e6ebf2"
-PLOT_TEXT = "#334155"
+# Plotly 深色模板配色
+PLOT_ACCENT = SIGNAL_ORANGE
+PLOT_BG = PANEL
+PLOT_PANEL = PANEL
+PLOT_GRID = BORDER
+PLOT_TEXT = BONE
 
 # 设计令牌（供页面内联样式统一取用）
-TEXT_PRIMARY = "#0f172a"   # 深墨蓝，主标题/关键数值
-TEXT_BODY = "#334155"      # 正文
-TEXT_MUTED = "#64748b"     # 次要说明
+TEXT_PRIMARY = BONE        # 主标题/关键数值
+TEXT_BODY = "#e6e2da"      # 正文
+TEXT_MUTED = MUTED_GREY    # 次要说明
 
 GLOBAL_CSS = """
 <style>
-/* 基础字体与主区底色 */
-html, body, [class*="css"] { font-family: "Segoe UI", "Microsoft YaHei", -apple-system, sans-serif; }
-.stApp { background-color: #f6f8fb; color: #0f172a; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
 
-/* 侧边栏：浅色，与主区统一，保证文字高对比 */
+:root {
+    --ink: #0b0b0c; --bone: #f4f1eb; --orange: #ff4d00;
+    --panel: #141416; --muted: #8a857b; --bd: rgba(244,241,235,0.12);
+}
+
+/* 舞台与字体 */
+html, body, [class*="css"] {
+    font-family: 'Inter', 'Helvetica Neue', 'Microsoft YaHei', system-ui, sans-serif;
+}
+.stApp { background-color: var(--ink); color: var(--bone); }
+.block-container { max-width: 1360px; padding: 32px 32px 96px 32px; }
+
+/* 侧边栏：Panel 面 */
 section[data-testid="stSidebar"] {
-    background-color: #fbfcfe;
-    border-right: 1px solid #e6ebf2;
+    background-color: var(--panel);
+    border-right: 1px solid var(--bd);
 }
-section[data-testid="stSidebar"] hr { border-color: #e6ebf2; }
-/* 侧栏导航单选按钮与说明文字：深色高对比，保证清晰可读 */
+section[data-testid="stSidebar"] hr { border-color: var(--bd); }
 section[data-testid="stSidebar"] .stRadio label,
-section[data-testid="stSidebar"] .stRadio [data-testid="stMarkdownContainer"] p { color: #0f172a; font-weight: 500; }
+section[data-testid="stSidebar"] .stRadio [data-testid="stMarkdownContainer"] p {
+    color: var(--bone); font-weight: 500;
+}
 section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
-section[data-testid="stSidebar"] small { color: #64748b; }
+section[data-testid="stSidebar"] small { color: var(--muted); }
 
-/* 标题层次：深色高对比 */
-h1, h2, h3 { color: #0f172a; font-weight: 650; letter-spacing: -0.01em; }
-.pv-subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 0.5rem; }
+/* 排印层级 */
+h1 { color: var(--bone); font-size: 64px; font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; }
+h2 { color: var(--bone); font-size: 26px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+h3 { color: var(--bone); font-size: 18px; font-weight: 700; }
+p, li { color: #e6e2da; }
+.pv-label {
+    font-size: 14px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+}
+.pv-subtitle { color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 12px; }
 .pv-tag {
-    display:inline-block; padding:2px 10px; border-radius:5px;
-    background:#eff4ff; color:#2563eb; font-size:0.78rem; margin-left:6px;
-    border:1px solid #d6e2ff; font-weight:600;
+    display:inline-block; padding:2px 10px; border-radius:2px;
+    background:transparent; color:var(--orange); font-size:0.78rem; margin-left:6px;
+    border:1px solid rgba(255,77,0,0.5); font-weight:600;
 }
 
-/* 指标卡（st.metric）：白底、细边、深色数值 */
+/* 主 CTA：信号橙填充、墨黑文字 */
+[data-testid="stFormSubmitButton"] button,
+div.stDownloadButton button {
+    background: var(--orange); color: var(--ink); border: none; border-radius: 2px;
+    font-weight: 700; padding: 14px 32px;
+    transition: filter 0.4s cubic-bezier(0.22,1,0.36,1), transform 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+[data-testid="stFormSubmitButton"] button:hover,
+div.stDownloadButton button:hover { filter: brightness(1.08); font-weight: 900; }
+[data-testid="stFormSubmitButton"] button:active,
+div.stDownloadButton button:active { transform: scale(0.98); }
+/* 次级按钮：描边骨白，hover 落橙 */
+div.stButton > button {
+    background: transparent; color: var(--bone);
+    border: 1px solid rgba(244,241,235,0.25); border-radius: 2px;
+    transition: border-color 0.4s cubic-bezier(0.22,1,0.36,1), color 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+div.stButton > button:hover { border-color: var(--orange); color: var(--orange); }
+
+/* 输入控件 */
+.stTextInput input, .stNumberInput input, .stDateInput input,
+div[data-baseweb="select"] > div {
+    background-color: var(--panel); color: var(--bone);
+    border: 1px solid rgba(244,241,235,0.18); border-radius: 2px;
+}
+.stTextInput input:focus, .stNumberInput input:focus {
+    border-color: var(--orange); outline: none;
+}
+
+/* 指标卡（st.metric）：Panel 面、大号骨白数值 */
 div[data-testid="stMetric"] {
-    background-color: #ffffff;
-    border: 1px solid #e6ebf2;
-    border-radius: 10px;
-    padding: 14px 16px;
-    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    background-color: var(--panel);
+    border: 1px solid var(--bd);
+    border-radius: 2px;
+    padding: 24px;
 }
-div[data-testid="stMetricValue"] { color: #0f172a; font-size: 1.5rem; font-weight: 650; }
-div[data-testid="stMetricLabel"] { color: #64748b; }
+div[data-testid="stMetricValue"] {
+    color: var(--bone); font-size: 40px; font-weight: 700; letter-spacing: -0.03em;
+}
+div[data-testid="stMetricLabel"] { color: var(--muted); font-size: 14px; letter-spacing: 0.06em; }
+div[data-testid="stMetricDelta"] { color: var(--muted); }
 
-/* 通用卡片：白底、细边、轻阴影 */
+/* 通用卡片：Panel 面、2px 圆角、Panel 投影 */
 .pv-card {
-    background-color:#ffffff; border:1px solid #e6ebf2; border-radius:10px;
-    padding:16px 18px; margin-bottom:12px; color:#334155;
-    box-shadow:0 1px 2px rgba(15,23,42,0.04);
+    background-color: var(--panel); border: 1px solid var(--bd); border-radius: 2px;
+    padding: 24px; margin-bottom: 16px; color: #e6e2da;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.60);
 }
-.pv-card b { color:#0f172a; }
+.pv-card b { color: var(--bone); }
 
 /* 说明 / 提示块 */
 .pv-note {
-    background-color:#f1f5fb; border-left:3px solid #2563eb; padding:10px 14px;
-    color:#475569; font-size:0.86rem; border-radius:6px; margin:8px 0; line-height:1.6;
+    background-color: transparent; border: 1px solid var(--bd);
+    border-left: 2px solid rgba(244,241,235,0.45); padding: 12px 16px;
+    color: #cfcbc2; font-size: 0.86rem; border-radius: 2px; margin: 8px 0; line-height: 1.6;
 }
 .pv-warn {
-    background-color:#fff7ed; border-left:3px solid #d97706; padding:10px 14px;
-    color:#92610e; font-size:0.86rem; border-radius:6px; margin:8px 0; line-height:1.6;
+    background-color: transparent; border: 1px solid var(--bd);
+    border-left: 2px solid #fbbf24; padding: 12px 16px;
+    color: #d9a441; font-size: 0.86rem; border-radius: 2px; margin: 8px 0; line-height: 1.6;
 }
 .pv-paper-badge {
-    display:inline-block; padding:1px 8px; border-radius:4px; font-size:0.72rem;
-    background:#fef6e7; color:#a16207; border:1px solid #f0d9a8; margin-left:6px; font-weight:600;
+    display:inline-block; padding:1px 8px; border-radius:2px; font-size:0.72rem;
+    background:transparent; color:var(--orange);
+    border:1px solid rgba(255,77,0,0.5); margin-left:6px; font-weight:600;
 }
 
-/* 风险等级徽章 */
+/* 风险等级徽章：描边语义色 */
 .pv-level-badge {
-    display:inline-block; padding:6px 18px; border-radius:8px; font-size:1.4rem;
-    font-weight:700; color:#ffffff;
+    display:inline-block; padding:6px 18px; border-radius:2px; font-size:1.4rem;
+    font-weight:700; background:transparent; border:1px solid currentColor;
 }
 
 /* 表格与分隔线 */
-.stDataFrame { border:1px solid #e6ebf2; border-radius:8px; }
-hr { border-color:#e6ebf2; }
+.stDataFrame { border: 1px solid var(--bd); border-radius: 2px; }
+hr { border-color: var(--bd); }
 
-/* 选项卡 / 单选按钮文字更清晰 */
-.stTabs [data-baseweb="tab"] { color:#475569; font-weight:600; }
-.stTabs [aria-selected="true"] { color:#2563eb; }
+/* 选项卡：选中骨白、下划线信号橙 */
+.stTabs [data-baseweb="tab"] { color: var(--muted); font-weight: 500; }
+.stTabs [aria-selected="true"] { color: var(--bone); }
+.stTabs [data-baseweb="tab-highlight"] { background-color: var(--orange); }
+
+/* ---------------- 动力学排印动效 ---------------- */
+/* 逐字入场：遮罩上升，35ms 间隔，单字 0.8s expo-out */
+.pv-stagger { overflow: hidden; }
+.pv-stagger .ch {
+    display: inline-block; transform: translateY(110%); opacity: 0;
+    animation: pv-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: var(--d);
+}
+@keyframes pv-rise { to { transform: translateY(0); opacity: 1; } }
+
+/* 字重呼吸：2.4s 循环，仅 transform/opacity/font-variation-settings 纪律内 */
+.pv-breath { animation: pv-breath 2.4s ease-in-out infinite; }
+@keyframes pv-breath {
+    0%, 100% { font-variation-settings: 'wght' 300; }
+    50%      { font-variation-settings: 'wght' 900; }
+}
+
+/* 跑马灯：24s linear 无缝循环，hover 暂停，.off 停止 */
+.pv-marquee { overflow: hidden; border-top: 1px solid var(--bd); border-bottom: 1px solid var(--bd); padding: 12px 0; margin: 24px 0; }
+.pv-marquee-track {
+    display: inline-flex; gap: 64px; white-space: nowrap; will-change: transform;
+    animation: pv-marquee 24s linear infinite;
+}
+.pv-marquee:hover .pv-marquee-track { animation-play-state: paused; }
+.pv-marquee.off .pv-marquee-track { animation: none; transform: none; }
+@keyframes pv-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.pv-marquee-item { color: var(--muted); font-size: 14px; letter-spacing: 0.12em; }
+.pv-marquee-item b { color: var(--bone); font-weight: 700; margin-left: 8px; }
+
+/* 减少动态效果：直接终态 */
+@media (prefers-reduced-motion: reduce) {
+    .pv-stagger .ch, .pv-breath, .pv-marquee-track {
+        animation: none !important; transform: none !important; opacity: 1 !important;
+    }
+}
+</style>
+"""
+
+# 关闭动效时追加的覆盖样式（跑马灯暂停开关 / 入场与呼吸停止）
+MOTION_OFF_CSS = """
+<style>
+.pv-stagger .ch { animation: none; transform: none; opacity: 1; }
+.pv-breath { animation: none; }
+.pv-marquee-track { animation: none; transform: none; }
 </style>
 """
 
 
-def inject_css() -> None:
-    """注入全局样式（幂等）。"""
+def inject_css(motion: bool = True) -> None:
+    """注入全局样式（幂等）。motion=False 时停止全部动效。"""
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+    if not motion:
+        st.markdown(MOTION_OFF_CSS, unsafe_allow_html=True)
+
+
+def stagger_html(text: str, tag: str = "h1", step_ms: int = 35) -> str:
+    """标题逐字入场 HTML：每字符一个 span，间隔 step_ms 毫秒遮罩上升。"""
+    spans = []
+    for i, ch in enumerate(text):
+        if ch == " ":
+            spans.append('<span class="ch" style="--d:%dms;">&nbsp;</span>' % (i * step_ms))
+        else:
+            spans.append(
+                '<span class="ch" style="--d:%dms;">%s</span>'
+                % (i * step_ms, html.escape(ch))
+            )
+    return f'<{tag} class="pv-stagger" style="margin-bottom:2px;">{"".join(spans)}</{tag}>'
+
+
+def marquee_html(items: list, off: bool = False) -> str:
+    """跑马灯 HTML：内容复制两份实现 24s 无缝循环。items: [(标签, 值), ...]。"""
+    def _run() -> str:
+        return "".join(
+            f'<span class="pv-marquee-item">{html.escape(k)}<b>{html.escape(str(v))}</b></span>'
+            for k, v in items
+        )
+    state = "pv-marquee off" if off else "pv-marquee"
+    return f'<div class="{state}"><div class="pv-marquee-track">{_run()}{_run()}</div></div>'
 
 
 def paper_badge(text: str = "论文实证结果") -> str:
@@ -119,7 +256,7 @@ def paper_badge(text: str = "论文实证结果") -> str:
 
 
 def level_badge_html(level: str, meaning: str = "") -> str:
-    """风险等级徽章 HTML。"""
-    color = LEVEL_COLORS.get(level, "#2563eb")
+    """风险等级徽章 HTML（描边语义色）。"""
+    color = LEVEL_COLORS.get(level, SIGNAL_ORANGE)
     label = f"{level}" + (f" · {meaning}" if meaning else "")
-    return f'<span class="pv-level-badge" style="background-color:{color}">{label}</span>'
+    return f'<span class="pv-level-badge" style="color:{color}">{label}</span>'

@@ -167,7 +167,7 @@ def _tab_history() -> None:
 def _render_history_detail(detail: dict) -> None:
     st.markdown(
         f'<div class="pv-card"><b>{detail["company_name"]}</b>　'
-        f'<span style="color:#64748b;">{detail.get("stock_code") or "无代码"}</span>　'
+        f'<span style="color:#8a857b;">{detail.get("stock_code") or "代码缺省"}</span>　'
         f'{detail.get("fiscal_year")} 年度　|　评分 '
         f'<b>{detail["score"]:.1f}</b>　等级 <b>{detail["risk_level"]}</b>'
         f'（{detail.get("level_meaning")}）</div>',

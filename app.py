@@ -31,12 +31,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# 全局样式与数据库初始化
-inject_css()
+# 数据库初始化 → 侧栏（含动效开关）→ 按开关注入全局样式
 init_db()
-
-# 导航分发
 selection = render_sidebar()
+inject_css(motion=st.session_state.get("pv_motion", True))
 
 if selection == "dashboard":
     dashboard.render()

@@ -18,10 +18,10 @@ def render_sidebar() -> str:
         st.markdown(
             """
             <div style="padding:6px 0 14px 0;">
-              <div style="font-size:1.35rem;font-weight:700;color:#0f172a;letter-spacing:1px;">
+              <div class="pv-breath" style="font-size:1.35rem;font-weight:700;color:#f4f1eb;letter-spacing:0.12em;">
                 PV-Risk
               </div>
-              <div style="color:#64748b;font-size:0.8rem;margin-top:2px;">
+              <div style="color:#8a857b;font-size:0.8rem;margin-top:2px;">
                 光伏上市公司财务风险预警<br/>与实证分析系统
               </div>
             </div>
@@ -49,5 +49,7 @@ def render_sidebar() -> str:
             unsafe_allow_html=True,
         )
         st.caption("数据来源：论文《光伏上市公司财务困境预警研究与应用》")
+        st.toggle("动效", value=True, key="pv_motion",
+                  help="关闭后停止跑马灯、逐字入场与字重呼吸")
 
     return selection

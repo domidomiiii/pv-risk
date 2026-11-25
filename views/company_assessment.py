@@ -142,7 +142,7 @@ def _validation_case_flow() -> None:
     st.markdown(
         f'<div class="pv-card"><b>内置验证案例：{case["company_name"]}（{case["stock_code"]}）'
         f'{case["year"]} 年度</b><br/>'
-        f'<span style="color:#64748b;font-size:0.85rem;">'
+        f'<span style="color:#8a857b;font-size:0.85rem;">'
         f'按表 7-3 八项指标实时复算，验证 logit={case["expected_logit"]}、score={case["expected_score"]}、'
         f'{case["expected_level"]} 级；次年归母净利润为负。</span></div>',
         unsafe_allow_html=True,
@@ -183,7 +183,7 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
     with c_left:
         st.markdown(
             f'<div class="pv-card"><b style="font-size:1.15rem;">{assessment["company_name"]}</b>'
-            f'　<span style="color:#64748b;">{assessment.get("stock_code") or "代码缺省"}</span>'
+            f'　<span style="color:#8a857b;">{assessment.get("stock_code") or "代码缺省"}</span>'
             f'　<span class="pv-tag">{assessment.get("fiscal_year")} 年度</span></div>',
             unsafe_allow_html=True,
         )
@@ -202,10 +202,10 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
                 with col:
                     st.markdown(
                         f'<div class="pv-card" style="text-align:center;">'
-                        f'<div style="color:#64748b;font-size:0.8rem;">{s["name_cn"]}</div>'
-                        f'<div style="font-size:1.4rem;font-weight:700;color:#d64545;">'
+                        f'<div style="color:#8a857b;font-size:0.8rem;">{s["name_cn"]}</div>'
+                        f'<div style="font-size:1.4rem;font-weight:700;color:#ff4d00;">'
                         f'{s["contribution"]:+.3f}</div>'
-                        f'<div style="color:#94a3b8;font-size:0.72rem;">{s["variable"]}</div></div>',
+                        f'<div style="color:#8a857b;font-size:0.72rem;">{s["variable"]}</div></div>',
                         unsafe_allow_html=True,
                     )
         else:

@@ -12,15 +12,15 @@ import plotly.graph_objects as go
 
 from components.theme import PLOT_ACCENT, PLOT_BG, PLOT_GRID, PLOT_PANEL, PLOT_TEXT
 
-# 模型对比配色
+# 模型对比配色（深色舞台：信号橙 + 骨白/灰阶 + 少量数据色）
 MODEL_COLORS = {
-    "Altman Z''": "#8fa3b8",
-    "单变量基准（−ROA）": "#3aa6a0",
-    "Firth Logit": "#3b82f6",
-    "LightGBM（未加权）": "#e08a2e",
-    "LightGBM（类别加权）": "#d64545",
-    "LightGBM（正例加权）": "#b5651d",
-    "LightGBM（SMOTE）": "#9b59b6",
+    "Altman Z''": "#6b665c",
+    "单变量基准（−ROA）": "#f4f1eb",
+    "Firth Logit": "#ff4d00",
+    "LightGBM（未加权）": "#ffb020",
+    "LightGBM（类别加权）": "#5eead4",
+    "LightGBM（正例加权）": "#c084fc",
+    "LightGBM（SMOTE）": "#8a857b",
 }
 
 
@@ -86,7 +86,7 @@ def line_chart(
 ) -> go.Figure:
     """多系列折线图。"""
     fig = go.Figure()
-    default_colors = [PLOT_ACCENT, "#e08a2e", "#3aa6a0", "#d64545", "#9b59b6"]
+    default_colors = [PLOT_ACCENT, "#f4f1eb", "#8a857b", "#ffb020", "#5eead4"]
     for i, (name, values) in enumerate(series.items()):
         color = (color_map or {}).get(name, default_colors[i % len(default_colors)])
         fig.add_trace(go.Scatter(
@@ -106,7 +106,7 @@ def bar_line_combo(
     bar_name: str = "观测数",
     line_name: str = "亏损率",
     bar_color: str = PLOT_ACCENT,
-    line_color: str = "#e08a2e",
+    line_color: str = "#f4f1eb",
     height: int = 420,
 ) -> go.Figure:
     """柱线组合图（左轴柱状、右轴折线，如各年观测数与亏损率）。"""
@@ -139,14 +139,14 @@ def errorbar_range(
     fig.add_trace(go.Scatter(
         x=categories + categories[::-1],
         y=highs + lows[::-1],
-        fill="toself", fillcolor="rgba(59,130,246,0.18)",
+        fill="toself", fillcolor="rgba(255,77,0,0.18)",
         line=dict(color="rgba(0,0,0,0)"), name="95% 区间",
     ))
     fig.add_trace(go.Scatter(
         x=categories, y=centers, mode="markers", name="原样本系数",
         marker=dict(color=PLOT_ACCENT, size=8),
     ))
-    fig.add_hline(y=0, line_dash="dash", line_color="#8fa3b8")
+    fig.add_hline(y=0, line_dash="dash", line_color="#8a857b")
     fig.update_layout(_base_layout(title, height))
     fig.update_layout(yaxis_title="系数值")
     return fig

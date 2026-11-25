@@ -1,9 +1,10 @@
+# 动力学排印深色主题：原生控件、表格画布与配色基线
 [theme]
-base = "light"
-primaryColor = "#2563eb"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f6f8fb"
-textColor = "#0f172a"
+base = "dark"
+primaryColor = "#ff4d00"
+backgroundColor = "#0b0b0c"
+secondaryBackgroundColor = "#141416"
+textColor = "#f4f1eb"
 font = "sans serif"
 
 [server]
