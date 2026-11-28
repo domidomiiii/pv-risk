@@ -3,10 +3,11 @@
 重点验证：
 1. 八项指标计算遵循论文表 3-1 口径。
 2. 缩尾 + 标准化遵循表 7-2 参数与"先缩尾后标准化"顺序。
-3. Firth 评分复算论文表 7-3 海源复材案例（logit=1.616, score=83.4, D 级）。
-4. 风险等级严格按表 7-1 阈值。
-5. 风险来源分解取正向贡献最大三项。
-6. 缺失值 / 分母为零校验。
+3. Firth 评分复算海源复材案例（符号约束后 logit≈2.141, score≈89.5, D 级）。
+4. 风险等级严格按重定阈值 14.23/23.17/37.27。
+5. 风险来源分解取截断后正向贡献最大三项；lev 负贡献置零、原始贡献保留。
+6. 沙盘联动模式与后端复算一致，且推高 lev 不会降低分值。
+7. 缺失值 / 分母为零校验。
 
 运行： python -m pytest tests/ -v   或   python tests/test_core.py
 """
@@ -83,7 +84,7 @@ def test_winsorize_before_standardize():
 
 
 # ---------------------------------------------------------------------------
-# 3. 海源复材案例复算（论文表 7-3）
+# 3. 海源复材案例复算（符号约束后）
 # ---------------------------------------------------------------------------
 def test_haiyuan_case_reproduction():
     case = load_risk_levels()["validation_case"]
@@ -95,17 +96,24 @@ def test_haiyuan_case_reproduction():
         got = result.preprocess[var].z
         assert _approx(got, exp_z, tol=0.02), f"{var}: z={got} 期望≈{exp_z}"
 
-    # 逐项贡献校验
+    # 逐项截断后贡献校验（lev 置零）
     for var, exp_c in case["expected_contribution"].items():
         got = result.contributions[var]
         assert _approx(got, exp_c, tol=0.01), f"{var}: 贡献={got} 期望≈{exp_c}"
+
+    # 原始贡献保留（lev 仍为负）
+    for var, exp_c in case["expected_raw_contribution"].items():
+        got = result.raw_contributions[var]
+        assert _approx(got, exp_c, tol=0.01), f"{var}: 原始贡献={got} 期望≈{exp_c}"
+    assert result.contributions["lev"] == 0.0
+    assert result.raw_contributions["lev"] < 0.0
 
     # logit / score / 等级
     assert _approx(result.logit, case["expected_logit"], tol=0.01), result.logit
     assert _approx(result.score, case["expected_score"], tol=0.15), result.score
     assert result.level == case["expected_level"], result.level
 
-    # Top 风险来源
+    # Top 风险来源（只用截断后贡献）
     top = rank_risk_sources(result.contributions, top_n=3)
     top_vars = [t.variable for t in top]
     assert top_vars == case["expected_top_risk_sources"], top_vars
@@ -114,24 +122,83 @@ def test_haiyuan_case_reproduction():
 
 
 # ---------------------------------------------------------------------------
-# 4. 风险等级阈值（表 7-1）
+# 4. 风险等级阈值（重定 14.23 / 23.17 / 37.27）
 # ---------------------------------------------------------------------------
 def test_risk_level_thresholds():
     assert classify_level(5.0)[0] == "A"
-    assert classify_level(11.51)[0] == "A"
-    assert classify_level(11.52)[0] == "B"
-    assert classify_level(20.02)[0] == "B"
-    assert classify_level(20.03)[0] == "C"
-    assert classify_level(33.24)[0] == "C"
-    assert classify_level(33.25)[0] == "D"
+    assert classify_level(14.22)[0] == "A"
+    assert classify_level(14.23)[0] == "B"
+    assert classify_level(23.17)[0] == "B"
+    assert classify_level(23.18)[0] == "C"
+    assert classify_level(37.27)[0] == "C"
+    assert classify_level(37.28)[0] == "D"
     assert classify_level(90.0)[0] == "D"
     print("[PASS] test_risk_level_thresholds")
 
 
 def test_sigmoid_score():
     assert _approx(sigmoid_score(0.0), 50.0), sigmoid_score(0.0)
-    assert _approx(sigmoid_score(1.616), 83.43, tol=0.05)
+    assert _approx(sigmoid_score(2.141), 89.47, tol=0.05)
     print("[PASS] test_sigmoid_score")
+
+
+# ---------------------------------------------------------------------------
+# 4b. 符号约束：单独推高 lev 不得降低风险分值
+# ---------------------------------------------------------------------------
+def test_sign_constraint_lev_never_lowers_score():
+    from core.config_loader import get_scorecard_params
+    params = get_scorecard_params()
+    base = {k: v["mean"] for k, v in params.items()}
+    baseline = score_indicators(base)
+    for lev in (0.60, 0.80, 0.93, 1.20):
+        vals = dict(base)
+        vals["lev"] = lev
+        r = score_indicators(vals)
+        assert r.contributions["lev"] == 0.0, r.contributions["lev"]
+        assert r.raw_contributions["lev"] < 0.0
+        assert r.score >= baseline.score - 1e-9, (lev, r.score, baseline.score)
+    print("[PASS] test_sign_constraint_lev_never_lowers_score")
+
+
+# ---------------------------------------------------------------------------
+# 4c. 沙盘联动模式：客户端复算与后端一致，lev 0.46→0.93 分值不低于 12.55
+# ---------------------------------------------------------------------------
+def test_sandbox_linkage_matches_backend():
+    """以与 iframe 客户端完全相同的算法（同一参数载荷）复算联动场景。"""
+    from core.config_loader import get_scorecard_params
+    params = get_scorecard_params()
+    linkage = {"roa": -0.40, "cr": -0.50, "reta": -0.49}
+
+    def z_of(k, x):
+        p = params[k]
+        c = min(p["winsor_p99"], max(p["winsor_p1"], x))
+        return (c - p["mean"]) / p["std"]
+
+    vals = {k: v["mean"] for k, v in params.items()}
+    vals["lev"] = 0.46
+    z_before = z_of("lev", vals["lev"])
+    vals["lev"] = 0.93
+    dz = z_of("lev", vals["lev"]) - z_before
+    for k, kcoef in linkage.items():
+        z_target = z_of(k, vals[k]) + kcoef * dz
+        vals[k] = params[k]["mean"] + params[k]["std"] * z_target
+
+    # 客户端公式（截断 lev 贡献）
+    logit = -1.941
+    for k, p in params.items():
+        c = min(p["winsor_p99"], max(p["winsor_p1"], vals[k]))
+        z = (c - p["mean"]) / p["std"]
+        contrib = p["coef"] * z
+        if k == "lev":
+            contrib = max(0.0, contrib)
+        logit += contrib
+    client_score = 100.0 / (1.0 + math.exp(-logit))
+
+    backend = score_indicators(vals)
+    assert abs(client_score - backend.score) < 0.001, (client_score, backend.score)
+    assert client_score >= 12.55, client_score
+    print(f"[PASS] test_sandbox_linkage_matches_backend  "
+          f"client={client_score:.4f} backend={backend.score:.4f}")
 
 
 # ---------------------------------------------------------------------------
@@ -168,6 +235,8 @@ if __name__ == "__main__":
         test_haiyuan_case_reproduction,
         test_risk_level_thresholds,
         test_sigmoid_score,
+        test_sign_constraint_lev_never_lowers_score,
+        test_sandbox_linkage_matches_backend,
         test_validation_missing_and_warning,
         test_missing_indicator_flagged_in_scoring,
     ]

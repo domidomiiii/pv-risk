@@ -46,7 +46,8 @@ def render() -> None:
         st.markdown(
             '<div class="pv-note">拖动八项指标滑杆，客户端即时复算'
             '缩尾→标准化→logit→分值→等级→贡献；仪表指针阻尼跟随。'
-            '参数同表 7-2，与后端评分链路一致。</div>',
+            '默认联动模式：推高负债率时按训练集相关性同步下调 ROA、流动比率与留存收益；'
+            '条件效应模式默认关闭。参数与后端评分链路共用同一载荷。</div>',
             unsafe_allow_html=True,
         )
         score_sandbox()
@@ -228,10 +229,17 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
     result_gauge(assessment["indicators"])
 
     st.markdown(
-        '<div class="pv-note">评分为 0—100 相对风险评分，用于企业间排序与初筛；'
-        '「贡献」表示关联强度。</div>',
+        '<div class="pv-note">分值为 0—100 的相对风险评分，未经概率校准，'
+        '不代表下一年度亏损的绝对概率。</div>',
         unsafe_allow_html=True,
     )
+    raw_lev = (assessment.get("raw_contributions") or {}).get("lev")
+    if raw_lev is not None and raw_lev < 0:
+        st.markdown(
+            '<div class="pv-warn">负债率贡献为负，已按符号约束置零；'
+            '该系数为条件效应，不构成因果解释。</div>',
+            unsafe_allow_html=True,
+        )
 
     # 指标明细表
     st.subheader("指标计算明细")
@@ -243,6 +251,7 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
             "缩尾值": _fmt(r["winsorized"]),
             "标准化 z": _fmt(r["z"]),
             "对 logit 贡献": _fmt(r["contribution"]),
+            "原始贡献": _fmt(r.get("raw_contribution")),
             "缩尾提示": r["clip_note"] or "—",
         }
         for r in assessment["detail_rows"]
@@ -291,8 +300,9 @@ def _render_case_verification(assessment: Dict[str, Any], case: Dict[str, Any]) 
             "指标": var,
             "论文 z 值": case["expected_z"][var],
             "系统 z 值": round(assessment["z_scores"][var], 2),
-            "论文贡献": case["expected_contribution"][var],
+            "截断后贡献": case["expected_contribution"][var],
             "系统贡献": round(assessment["contributions"][var], 3),
+            "系统原始贡献": round(assessment["raw_contributions"][var], 3),
         })
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 

@@ -1,17 +1,19 @@
 {
   "_meta": {
-    "source": "论文表 7-1 风险等级阈值（训练集 n=551）",
-    "note": "阈值由训练集预测概率的分位数确定，以保证与验证口径一致。不得自行修改阈值。分值为模型输出经 Sigmoid 变换后乘以 100，用于企业间相对排序，非校准后的亏损概率。",
-    "training_D_level_note": "训练集内 D 级观测（55 个）的实际亏损率为 49.1%，约为整体（16.5%）的 3 倍，具备区分能力。33.24 是模型输出分值的分位切点，D 级经济含义由其实际亏损率给出。该阈值属操作性分级标准，未经误差损失函数优化。",
-    "probability_caveat": "该分值是 0—100 的相对风险评分，未经概率校准，不能直接解释为企业下一年度亏损的绝对概率。"
+    "source": "风险等级阈值：训练集（2014—2022，n=551）分值 50/75/90 分位重定（应用层修复）",
+    "note": "阈值由训练集预测分值的分位数确定，以保证与验证口径一致。分值为模型输出经 Sigmoid 变换后乘以 100，用于企业间相对排序，非校准后的亏损概率。",
+    "recalibration_note": "原切点 11.52/20.02/33.24 下，lev 负贡献会把高杠杆亏损企业从 D 压到 C；本轮以训练集分值 50/75/90 分位重定为 14.23/23.17/37.27，保持后 50%/前 10% 语义不变。原参数保留于 original_thresholds 供回滚。",
+    "original_thresholds": {"A_max": 11.52, "B_max": 20.02, "C_max": 33.24},
+    "training_D_level_note": "原切点 33.24 下训练集 D 级观测（55 个）的实际亏损率为 49.1%，约为整体（16.5%）的 3 倍，具备区分能力。重定后 37.27 仍为模型输出分值的分位切点，D 级经济含义由其实际亏损率给出。该阈值属操作性分级标准，未经误差损失函数优化。",
+    "probability_caveat": "分值为 0—100 的相对风险评分，未经概率校准，不代表下一年度亏损的绝对概率。"
   },
   "levels": [
-    {"level": "A", "score_min": null,   "score_max": 11.52, "boundary": "left_open",  "train_quantile": "后 50%",   "meaning": "低风险",   "color": "green"},
-    {"level": "B", "score_min": 11.52,  "score_max": 20.02, "boundary": "closed",     "train_quantile": "50—75 分位", "meaning": "中低风险", "color": "teal"},
-    {"level": "C", "score_min": 20.02,  "score_max": 33.24, "boundary": "closed",     "train_quantile": "75—90 分位", "meaning": "中高风险", "color": "orange"},
-    {"level": "D", "score_min": 33.24,  "score_max": null,  "boundary": "right_open", "train_quantile": "前 10%",   "meaning": "高风险",   "color": "red"}
+    {"level": "A", "score_min": null,   "score_max": 14.23, "boundary": "left_open",  "train_quantile": "后 50%",   "meaning": "低风险",   "color": "green"},
+    {"level": "B", "score_min": 14.23,  "score_max": 23.17, "boundary": "closed",     "train_quantile": "50—75 分位", "meaning": "中低风险", "color": "teal"},
+    {"level": "C", "score_min": 23.17,  "score_max": 37.27, "boundary": "closed",     "train_quantile": "75—90 分位", "meaning": "中高风险", "color": "orange"},
+    {"level": "D", "score_min": 37.27,  "score_max": null,  "boundary": "right_open", "train_quantile": "前 10%",   "meaning": "高风险",   "color": "red"}
   ],
-  "classification_rule": "score < 11.52 → A；11.52 ≤ score ≤ 20.02 → B；20.02 < score ≤ 33.24 → C；score > 33.24 → D",
+  "classification_rule": "score < 14.23 → A；14.23 ≤ score ≤ 23.17 → B；23.17 < score ≤ 37.27 → C；score > 37.27 → D",
   "validation_case": {
     "source": "论文表 7-3 海源复材 2024 年度风险测算（系统内置验证案例）",
     "company_name": "海源复材",
@@ -27,15 +29,19 @@
       "cip_fa": 0.39, "reta": -4.57, "asset_turn": -1.13, "growth": -1.21
     },
     "expected_contribution": {
+      "lev": 0.0, "cr": 0.519, "roa": 1.971, "ocf": 0.526,
+      "cip_fa": -0.117, "reta": 1.010, "asset_turn": 0.335, "growth": -0.163
+    },
+    "expected_raw_contribution": {
       "lev": -0.524, "cr": 0.519, "roa": 1.971, "ocf": 0.526,
       "cip_fa": -0.117, "reta": 1.010, "asset_turn": 0.335, "growth": -0.163
     },
     "expected_intercept": -1.941,
-    "expected_logit": 1.616,
-    "expected_score": 83.4,
+    "expected_logit": 2.141,
+    "expected_score": 89.5,
     "expected_level": "D",
     "expected_top_risk_sources": ["roa", "reta", "ocf"],
     "top_risk_source_values": {"roa": 1.971, "reta": 1.010, "ocf": 0.526},
-    "case_note": "系统必须通过真实公式计算验证该案例，不能直接写死 83.4。reta 原始值 -1.351 低于缩尾下界 -1.1103，需先缩尾再标准化。资产负债率贡献为负（-0.524），与抑制效应一致，不应据此认为高杠杆对企业有利。"
+    "case_note": "系统必须通过真实公式计算验证该案例，不能直接写死结果。reta 原始值 -1.351 低于缩尾下界 -1.1103，需先缩尾再标准化。资产负债率原始贡献为负（-0.524），按符号约束置零后计入 logit（1.616 + 0.524 ≈ 2.141）；该系数为条件效应，不构成因果解释，不应据此认为高杠杆对企业有利。"
   }
 }

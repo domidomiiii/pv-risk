@@ -440,9 +440,11 @@ def _tab_scorecard() -> None:
          "训练集分位": lv["train_quantile"], "含义": lv["meaning"]}
         for lv in rl["levels"]
     ])
-    st.markdown("**表 7-1 风险等级阈值（训练集 n=551）**", unsafe_allow_html=False)
+    st.markdown("**风险等级阈值（训练集 n=551 分值 50/75/90 分位重定）**", unsafe_allow_html=False)
     st.dataframe(levels_df, use_container_width=True, hide_index=True)
     st.markdown(f'<div class="pv-note">{rl["_meta"]["training_D_level_note"]}</div>',
+                unsafe_allow_html=True)
+    st.markdown(f'<div class="pv-note">{rl["_meta"]["recalibration_note"]}</div>',
                 unsafe_allow_html=True)
 
     st.subheader("7.2 评分卡计算流程")
@@ -464,7 +466,8 @@ def _tab_scorecard() -> None:
         "<span class='pv-paper-badge'>论文实证结果</span>", unsafe_allow_html=True)
     st.dataframe(param_df, use_container_width=True, hide_index=True)
     st.markdown(
-        '<div class="pv-note">均值与标准差为缩尾后数值，顺序为先截断后计算。</div>',
+        '<div class="pv-note">均值与标准差为缩尾后数值，顺序为先截断后计算。'
+        'lev 贡献按符号约束取 max(0, β×z)：该系数为条件效应，不构成因果解释。</div>',
         unsafe_allow_html=True,
     )
 
@@ -482,17 +485,19 @@ def _tab_scorecard() -> None:
     st.markdown(
         f'<div class="pv-card">案例：{case["company_name"]}（{case["stock_code"]}）'
         f'{case["year"]} 年度，次年归母净利润为负。实时复算见「企业风险评估 → 内置验证案例」'
-        f'（论文值 logit={case["expected_logit"]}、score={case["expected_score"]}、'
+        f'（符号约束后预期 logit={case["expected_logit"]}、score={case["expected_score"]}、'
         f'{case["expected_level"]} 级）。</div>',
         unsafe_allow_html=True,
     )
     case_df = pd.DataFrame([
         {"指标": k, "原始值": case["raw_indicators"][k], "标准化值": case["expected_z"][k],
-         "对 logit 的贡献": case["expected_contribution"][k]}
+         "原始贡献": case["expected_raw_contribution"][k],
+         "截断后贡献": case["expected_contribution"][k]}
         for k in case["raw_indicators"]
     ])
     case_df.loc[len(case_df)] = {"指标": "截距", "原始值": "—", "标准化值": "—",
-                                 "对 logit 的贡献": case["expected_intercept"]}
+                                 "原始贡献": case["expected_intercept"],
+                                 "截断后贡献": case["expected_intercept"]}
     st.markdown("**表 7-3 海源复材 2024 年度风险测算**", unsafe_allow_html=False)
     st.dataframe(case_df, use_container_width=True, hide_index=True)
     st.markdown(f'<div class="pv-note">{case["case_note"]}</div>', unsafe_allow_html=True)

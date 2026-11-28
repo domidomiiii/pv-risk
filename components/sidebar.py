@@ -43,7 +43,7 @@ def render_sidebar() -> str:
             """
             <div class="pv-note" style="font-size:0.76rem;">
             评分卡：Firth Logit<br/>
-            阈值：表 7-1<br/>
+            阈值：训练集分位重定<br/>
             输出为 0—100 相对评分。
             </div>
             """,

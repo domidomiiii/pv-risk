@@ -41,7 +41,10 @@ _FONT_IMPORT = (
 
 
 def _params_payload() -> Dict[str, Any]:
-    """评分链路参数（表 7-2 / 表 5-1 / 表 7-1），供组件内客户端实时复算。"""
+    """评分链路参数（表 7-2 / 表 5-1 / 重定阈值），供组件内客户端实时复算。
+
+    客户端与后端共用同一载荷：符号约束变量、联动相关系数、固定文案均由此下发。
+    """
     mp = load_model_parameters()
     rl = load_risk_levels()
     params = mp["scorecard_params"]["params"]
@@ -57,6 +60,10 @@ def _params_payload() -> Dict[str, Any]:
         "coef": {k: v["coef"] for k, v in params.items()},
         "intercept": mp["scorecard_params"]["intercept"],
         "levels": rl["levels"],
+        "clamp_vars": ["lev"],
+        "linkage": {"roa": -0.40, "cr": -0.50, "reta": -0.49},
+        "caveat": "分值为 0—100 的相对风险评分，未经概率校准，不代表下一年度亏损的绝对概率。",
+        "clamp_note": "负债率贡献为负，已按符号约束置零；该系数为条件效应，不构成因果解释。",
     }
 
 
@@ -230,15 +237,18 @@ transition:transform .5s cubic-bezier(0.22,1,0.36,1);border-radius:2px;}
 .bar-row .cv{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--bone);}
 .bar-row.top .nm{color:var(--bone);font-weight:700;}
 .note{color:var(--muted);font-size:11px;line-height:1.6;margin-top:14px;}
+.mode-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--bone);
+padding:8px 10px;border:1px solid var(--bd);border-radius:2px;background:#101012;}
+.mode-row input{accent-color:var(--orange);cursor:pointer;}
+.lev-warn{color:var(--c);font-size:11px;line-height:1.55;padding:2px 0 4px;}
+.clamp-note{color:var(--c);font-size:11px;line-height:1.6;margin-top:10px;
+border-left:2px solid var(--c);padding-left:8px;display:none;}
 </style></head><body>
 <div class="wrap">
   <div class="gauge-box">
     <div class="gauge-title">Risk Score · 0—100</div>
     <svg viewBox="0 0 300 170">
-      <path d="M 30 150 A 120 120 0 0 1 37.77 107.52" stroke="#4ade80" stroke-width="10" fill="none" opacity="0.55"/>
-      <path d="M 37.77 107.52 A 120 120 0 0 1 52.96 79.41" stroke="#2dd4bf" stroke-width="10" fill="none" opacity="0.55"/>
-      <path d="M 52.96 79.41 A 120 120 0 0 1 89.70 46.25" stroke="#fbbf24" stroke-width="10" fill="none" opacity="0.55"/>
-      <path d="M 89.70 46.25 A 120 120 0 0 1 270 150" stroke="#f87171" stroke-width="10" fill="none" opacity="0.55"/>
+      <g id="arcs"></g>
       <g id="ticks"></g>
       <g class="needle" id="needle">
         <line x1="150" y1="150" x2="150" y2="46" stroke="#f4f1eb" stroke-width="3"/>
@@ -253,8 +263,8 @@ transition:transform .5s cubic-bezier(0.22,1,0.36,1);border-radius:2px;}
     <div class="controls" id="controls"></div>
     <div class="btns" id="btns"></div>
     <div class="bars" id="bars"></div>
-    <div class="note">贡献 = Firth 系数 × 标准化值；取正向最大三项为主要风险来源。
-    分值为相对排序值，未经概率校准。滑杆拖动即时重算（客户端复算，参数同表 7-2）。</div>
+    <div class="clamp-note" id="clampNote"></div>
+    <div class="note" id="note"></div>
   </div>
 </div>
 <script>
@@ -265,34 +275,93 @@ transition:transform .5s cubic-bezier(0.22,1,0.36,1);border-radius:2px;}
   var CASE=__CASE__;           // 海源复材案例原始指标
   var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var V=P.variables, coef=P.coef, names=P.names||{};
+  var CLAMP=P.clamp_vars||[], LINK=P.linkage||{};
   var vals={};
   V.forEach(function(k){ vals[k]= (MODE==='result'? FIXED[k] : (CASE? CASE[k] : P.mean[k])); });
 
-  // 刻度：等级切点
-  var ticks=document.getElementById('ticks');
+  // 等级切点与弧段：全部来自参数载荷（与后端同源）
+  var SVGNS='http://www.w3.org/2000/svg';
+  var cuts=P.levels.filter(function(l){return l.score_max!==null;})
+    .map(function(l){return l.score_max;});
   function ang(score){ return Math.PI*(1-score/100); }
-  [11.52,20.02,33.24].forEach(function(t){
+  function pt(s){ var a=ang(s); return [150+120*Math.cos(a),150-120*Math.sin(a)]; }
+  var ARC_COLORS=['#4ade80','#2dd4bf','#fbbf24','#f87171'];
+  var arcs=document.getElementById('arcs');
+  var bounds=[0].concat(cuts).concat([100]);
+  for(var bi=0;bi<bounds.length-1;bi++){
+    var pa=pt(bounds[bi]),pb=pt(bounds[bi+1]);
+    var arc=document.createElementNS(SVGNS,'path');
+    arc.setAttribute('d','M '+pa[0].toFixed(2)+' '+pa[1].toFixed(2)+
+      ' A 120 120 0 0 1 '+pb[0].toFixed(2)+' '+pb[1].toFixed(2));
+    arc.setAttribute('stroke',ARC_COLORS[bi]||'#f87171');
+    arc.setAttribute('stroke-width','10');arc.setAttribute('fill','none');
+    arc.setAttribute('opacity','0.55');arcs.appendChild(arc);
+  }
+  var ticks=document.getElementById('ticks');
+  cuts.forEach(function(t){
     var a=ang(t),x1=150+112*Math.cos(a),y1=150-112*Math.sin(a);
     var x2=150+128*Math.cos(a),y2=150-128*Math.sin(a);
-    var l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    var l=document.createElementNS(SVGNS,'line');
     l.setAttribute('x1',x1);l.setAttribute('y1',y1);
     l.setAttribute('x2',x2);l.setAttribute('y2',y2);
     l.setAttribute('stroke','#8a857b');l.setAttribute('stroke-width','1.5');
     ticks.appendChild(l);
   });
+  function classify(score){
+    for(var i=0;i<P.levels.length;i++){
+      var lv=P.levels[i],lo=lv.score_min,hi=lv.score_max;
+      if(lo===null&&hi!==null&&score<hi)return lv.level;
+      if(hi===null&&lo!==null&&score>lo)return lv.level;
+      if(lo!==null&&hi!==null&&lo<=score&&score<=hi)return lv.level;
+    }
+    return P.levels[P.levels.length-1].level;
+  }
+  function zOf(k,x){
+    var c=Math.min(P.p99[k],Math.max(P.p1[k],x));
+    return (c-P.mean[k])/P.std[k];
+  }
 
-  // 控件区：sandbox 为滑杆，result 为只读 chips
+  // 控件区：sandbox 为滑杆（默认联动模式），result 为只读 chips
   var controls=document.getElementById('controls');
-  var valEls={},clipEls={};
+  var valEls={},clipEls={},ranges={},sliderEls={};
+  var condMode=null;
+  if(MODE==='sandbox'){
+    var modeRow=document.createElement('div');modeRow.className='mode-row';
+    condMode=document.createElement('input');condMode.type='checkbox';condMode.id='condMode';
+    var modeLab=document.createElement('label');modeLab.htmlFor='condMode';
+    modeLab.textContent='条件效应模式（仅推 lev，不联动；默认关闭）';
+    modeRow.appendChild(condMode);modeRow.appendChild(modeLab);
+    controls.appendChild(modeRow);
+    var warn=document.createElement('div');warn.className='lev-warn';
+    warn.textContent='警告：β_lev 为条件效应系数，单独提高负债率不代表风险下降。'+
+      '默认联动模式按训练集相关性同步调整 ROA、流动比率与留存收益资产比。';
+    controls.appendChild(warn);
+  }
   V.forEach(function(k){
     var row=document.createElement('div');row.className='row';
     var lab=document.createElement('label');lab.textContent=(names[k]||k);
     row.appendChild(lab);
     if(MODE==='sandbox'){
       var lo=P.p1[k]-(P.p99[k]-P.p1[k])*0.35, hi=P.p99[k]+(P.p99[k]-P.p1[k])*0.35;
+      ranges[k]={lo:lo,hi:hi};
       var inp=document.createElement('input');inp.type='range';
       inp.min=lo;inp.max=hi;inp.step=(hi-lo)/400;inp.value=vals[k];
-      inp.addEventListener('input',function(){vals[k]=parseFloat(inp.value);recompute();});
+      sliderEls[k]=inp;
+      inp.addEventListener('input',function(){
+        var nv=parseFloat(inp.value);
+        if(k==='lev'&&condMode&&!condMode.checked){
+          // 联动模式：按训练集相关系数同步调整 roa/cr/reta 的 z
+          var dz=zOf('lev',nv)-zOf('lev',vals.lev);
+          vals.lev=nv;
+          Object.keys(LINK).forEach(function(t){
+            var zt=zOf(t,vals[t])+LINK[t]*dz;
+            var x=P.mean[t]+P.std[t]*zt;
+            vals[t]=Math.min(ranges[t].hi,Math.max(ranges[t].lo,x));
+          });
+          syncSliders();
+        }else{ vals[k]=nv; }
+        recompute();
+      });
       row.appendChild(inp);
     }else{
       var chip=document.createElement('div');
@@ -315,14 +384,13 @@ transition:transform .5s cubic-bezier(0.22,1,0.36,1);border-radius:2px;}
     mkBtn('海源复材 2024 案例','primary',function(){V.forEach(function(k){vals[k]=CASE[k];});syncSliders();recompute();});
     mkBtn('导出当前参数 JSON','',function(){
       var r=compute();var blob=new Blob([JSON.stringify({indicators:vals,z:r.z,
-        contributions:r.contrib,logit:r.logit,score:r.score,level:r.level},null,2)],
+        raw_contributions:r.raw,contributions:r.contrib,logit:r.logit,score:r.score,level:r.level},null,2)],
         {type:'application/json'});
       var a=document.createElement('a');a.href=URL.createObjectURL(blob);
       a.download='pv-risk_sandbox.json';a.click();URL.revokeObjectURL(a.href);});
   }
   function syncSliders(){
-    var inputs=controls.querySelectorAll('input[type=range]');
-    V.forEach(function(k,i){inputs[i].value=vals[k];});
+    V.forEach(function(k){ if(sliderEls[k])sliderEls[k].value=vals[k]; });
   }
 
   // 贡献条
@@ -339,24 +407,30 @@ transition:transform .5s cubic-bezier(0.22,1,0.36,1);border-radius:2px;}
   });
 
   function compute(){
-    var z={},contrib={},logit=P.intercept,clipped={};
+    var z={},raw={},contrib={},logit=P.intercept,clipped={};
     V.forEach(function(k){
       var x=vals[k];var c=Math.min(P.p99[k],Math.max(P.p1[k],x));
       clipped[k]=(x<P.p1[k]||x>P.p99[k]);
       z[k]=(c-P.mean[k])/P.std[k];
-      contrib[k]=coef[k]*z[k];logit+=contrib[k];
+      raw[k]=coef[k]*z[k];
+      // 符号约束：lev 负贡献置零，logit 与排序均用截断后贡献（与后端一致）
+      contrib[k]=(CLAMP.indexOf(k)>=0)?Math.max(0,raw[k]):raw[k];
+      logit+=contrib[k];
     });
     var score=100/(1+Math.exp(-logit));
-    var level='D';
-    if(score<11.52)level='A';else if(score<=20.02)level='B';else if(score<=33.24)level='C';
+    var level=classify(score);
     var top=V.slice().sort(function(a,b){return contrib[b]-contrib[a];})
       .filter(function(k){return contrib[k]>0;}).slice(0,3);
-    return {z:z,contrib:contrib,logit:logit,score:score,level:level,top:top,clipped:clipped};
+    return {z:z,raw:raw,contrib:contrib,logit:logit,score:score,level:level,top:top,clipped:clipped};
   }
 
   var needle=document.getElementById('needle');
   var scoreEl=document.getElementById('score'),chip=document.getElementById('chip');
   var readout=document.getElementById('readout');
+  var clampNote=document.getElementById('clampNote');
+  document.getElementById('note').textContent='贡献 = Firth 系数 × 标准化值（lev 负贡献按符号约束置零）；'+
+    '取正向最大三项为主要风险来源。'+P.caveat+
+    (MODE==='sandbox'?'滑杆拖动即时重算（客户端复算，与后端共用同一参数载荷）。':'');
   var shown=0,target=0,raf=null;
   var LEVEL_COLOR={A:'#4ade80',B:'#2dd4bf',C:'#fbbf24',D:'#f87171'};
   var LEVEL_MEAN={A:'低风险',B:'中低风险',C:'中高风险',D:'高风险'};
@@ -383,8 +457,12 @@ transition:transform .5s cubic-bezier(0.22,1,0.36,1);border-radius:2px;}
       b.fill.style.transform='scaleX('+mag.toFixed(3)+')';
       b.fill.style.background=c>0?(r.top.indexOf(k)>=0?'#ff4d00':'rgba(255,77,0,0.45)'):'#3a3a40';
       b.cv.textContent=(c>=0?'+':'')+c.toFixed(3);
+      b.row.title='原始贡献 '+r.raw[k].toFixed(3);
       b.row.className='bar-row'+(r.top.indexOf(k)>=0?' top':'');
     });
+    var levClamped=CLAMP.some(function(k){return r.raw[k]<0;});
+    clampNote.style.display=levClamped?'block':'none';
+    if(levClamped)clampNote.textContent=P.clamp_note;
     if(reduce){shown=target;needle.style.transform='rotate('+(-90+180*target/100)+'deg)';
       scoreEl.textContent=target.toFixed(1);}
     else if(!raf){raf=requestAnimationFrame(loop);}
@@ -399,8 +477,8 @@ transition:transform .5s cubic-bezier(0.22,1,0.36,1);border-radius:2px;}
 """
 
 
-def score_sandbox(height: int = 720) -> Any:
-    """八滑杆实时评分沙盘：拖动即重算，仪表指针阻尼跟随。"""
+def score_sandbox(height: int = 800) -> Any:
+    """八滑杆实时评分沙盘：默认联动模式，拖动即重算，仪表指针阻尼跟随。"""
     rl = load_risk_levels()
     case = rl["validation_case"]["raw_indicators"]
     html_doc = (

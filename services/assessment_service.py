@@ -70,6 +70,7 @@ def assess_from_raw_inputs(
         "winsorized": {v: result.preprocess[v].winsorized for v in indicators},
         "z_scores": {v: result.preprocess[v].z for v in indicators},
         "contributions": result.contributions,
+        "raw_contributions": result.raw_contributions,
         "logit": result.logit,
         "intercept": result.intercept,
         "score": result.score,
@@ -108,6 +109,7 @@ def assess_from_indicators(
         "winsorized": {v: result.preprocess[v].winsorized for v in indicator_values},
         "z_scores": {v: result.preprocess[v].z for v in indicator_values},
         "contributions": result.contributions,
+        "raw_contributions": result.raw_contributions,
         "logit": result.logit,
         "intercept": result.intercept,
         "score": result.score,
@@ -141,6 +143,7 @@ def _build_detail_rows(result, attribution) -> List[Dict[str, Any]]:
             "winsorized": pr.winsorized,
             "z": pr.z,
             "contribution": item.contribution,
+            "raw_contribution": result.raw_contributions.get(v),
             "clip_note": clip_note,
         })
     return rows

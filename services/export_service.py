@@ -18,7 +18,7 @@ def export_single_assessment(assessment: Dict[str, Any]) -> bytes:
     buffer = io.BytesIO()
 
     # Sheet1：评估概览
-    overview = pd.DataFrame([
+    overview_rows = [
         {"项目": "企业名称", "值": assessment.get("company_name", "")},
         {"项目": "股票代码", "值": assessment.get("stock_code", "")},
         {"项目": "评估年度", "值": assessment.get("fiscal_year", "")},
@@ -30,8 +30,13 @@ def export_single_assessment(assessment: Dict[str, Any]) -> bytes:
             f"{s['name_cn']}({s['contribution']:+.3f})"
             for s in assessment.get("top_risk_sources", [])
         )},
-        {"项目": "评分说明", "值": "0—100 相对风险评分，未经概率校准，非绝对亏损概率。"},
-    ])
+        {"项目": "评分说明", "值": "分值为 0—100 的相对风险评分，未经概率校准，不代表下一年度亏损的绝对概率。"},
+    ]
+    raw_lev = (assessment.get("raw_contributions") or {}).get("lev")
+    if raw_lev is not None and raw_lev < 0:
+        overview_rows.append({"项目": "符号约束提示", "值":
+                              "负债率贡献为负，已按符号约束置零；该系数为条件效应，不构成因果解释。"})
+    overview = pd.DataFrame(overview_rows)
 
     # Sheet2：指标明细
     detail_rows = assessment.get("detail_rows", [])
@@ -43,6 +48,7 @@ def export_single_assessment(assessment: Dict[str, Any]) -> bytes:
             "缩尾值": _round(r["winsorized"], 6),
             "标准化z": _round(r["z"], 4),
             "对logit贡献": _round(r["contribution"], 4),
+            "原始贡献": _round(r.get("raw_contribution"), 4),
             "缩尾提示": r["clip_note"],
         }
         for r in detail_rows
