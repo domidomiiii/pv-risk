@@ -35,6 +35,7 @@ def render_sidebar() -> str:
             options=list(MENU.keys()),
             format_func=lambda k: MENU[k],
             label_visibility="collapsed",
+            key="pv_nav",
         )
 
         st.divider()

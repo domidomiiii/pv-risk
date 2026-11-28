@@ -8,9 +8,10 @@ from __future__ import annotations
 import streamlit as st
 
 from components.charts import MODEL_COLORS, grouped_bar
+from components.interactive import kinetic_hero
 from components.metric_cards import render_metric_row
 from components.tables import table_from_spec
-from components.theme import marquee_html, stagger_html
+from components.theme import marquee_html
 from core.config_loader import load_research_overview, load_research_results
 
 
@@ -20,11 +21,8 @@ def render() -> None:
     proj = ov["project"]
     motion = st.session_state.get("pv_motion", True)
 
-    # 标题区：逐字入场 + 核心数字跑马灯
-    st.markdown('<div class="pv-label">Solar PV Listed Companies · Financial Risk Warning</div>',
-                unsafe_allow_html=True)
-    st.markdown(stagger_html(proj["full_name"]), unsafe_allow_html=True)
-    st.markdown(f'<div class="pv-subtitle">{proj["paper_title"]}</div>', unsafe_allow_html=True)
+    # 标题区：指针响应动力学排印首屏（CTA 经 URL query 跳转导航）
+    kinetic_hero(proj["full_name"], proj["paper_title"])
     marquee_items = [(n["label"], f'{n["value"]}{n.get("unit", "")}') for n in ov["core_numbers"]]
     marquee_items += [
         ("训练集亏损率", ov["sample_split"]["train"]["loss_rate"]),

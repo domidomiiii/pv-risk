@@ -205,6 +205,43 @@ hr { border-color: var(--bd); }
         animation: none !important; transform: none !important; opacity: 1 !important;
     }
 }
+
+/* ---------------- 交互层：滚动条 / 选中 / 焦点 / hover / 滚动揭示 ---------------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+::-webkit-scrollbar-thumb { background: #2a2a2e; border-radius: 5px; border: 2px solid var(--ink); }
+::-webkit-scrollbar-thumb:hover { background: var(--orange); }
+* { scrollbar-width: thin; scrollbar-color: #2a2a2e var(--ink); }
+::selection { background: var(--orange); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+/* hover 微反馈：卡片浮起 + 描边落橙 */
+.pv-card, div[data-testid="stMetric"] {
+    transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+.pv-card:hover, div[data-testid="stMetric"]:hover {
+    transform: translateY(-2px); border-color: rgba(255,77,0,0.45);
+}
+section[data-testid="stSidebar"] .stRadio label {
+    transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), color 0.3s;
+}
+section[data-testid="stSidebar"] .stRadio label:hover { transform: translateX(4px); color: var(--orange); }
+.stTabs [data-baseweb="tab"] { transition: color 0.3s; }
+.stTabs [data-baseweb="tab"]:hover { color: var(--bone); }
+.stTabs [data-baseweb="tab-highlight"] { transition: all 0.4s cubic-bezier(0.22,1,0.36,1); }
+
+/* 滚动驱动揭示（Chrome 115+；不支持时回退为入场一次性动画） */
+@supports (animation-timeline: view()) {
+    .pv-card, .pv-note, .pv-warn, div[data-testid="stMetric"], .stDataFrame {
+        animation: pv-reveal linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 55%;
+    }
+    @keyframes pv-reveal {
+        from { opacity: 0; transform: translateY(28px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+}
 </style>
 """
 
@@ -214,6 +251,10 @@ MOTION_OFF_CSS = """
 .pv-stagger .ch { animation: none; transform: none; opacity: 1; }
 .pv-breath { animation: none; }
 .pv-marquee-track { animation: none; transform: none; }
+.pv-card, .pv-note, .pv-warn, div[data-testid="stMetric"], .stDataFrame {
+    animation: none !important; opacity: 1 !important; transform: none !important;
+}
+.pv-card:hover, div[data-testid="stMetric"]:hover { transform: none; }
 </style>
 """
 

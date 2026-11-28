@@ -11,6 +11,7 @@ from typing import Any, Dict
 import pandas as pd
 import streamlit as st
 
+from components.interactive import result_gauge, score_sandbox
 from components.metric_cards import render_level_card
 from components.theme import level_badge_html
 from core.config_loader import load_indicators, load_risk_levels
@@ -31,7 +32,8 @@ def render() -> None:
 
     input_mode = st.radio(
         "数据录入方式",
-        ["手动输入财务报表数据", "上传 Excel", "内置验证案例（海源复材 2024）"],
+        ["手动输入财务报表数据", "上传 Excel", "内置验证案例（海源复材 2024）",
+         "交互沙盘（拖动滑杆实时评分）"],
         horizontal=True,
         label_visibility="collapsed",
     )
@@ -40,6 +42,14 @@ def render() -> None:
         _manual_input_flow()
     elif input_mode == "上传 Excel":
         _excel_flow()
+    elif input_mode == "交互沙盘（拖动滑杆实时评分）":
+        st.markdown(
+            '<div class="pv-note">拖动八项指标滑杆，客户端即时复算'
+            '缩尾→标准化→logit→分值→等级→贡献；仪表指针阻尼跟随。'
+            '参数同表 7-2，与后端评分链路一致。</div>',
+            unsafe_allow_html=True,
+        )
+        score_sandbox()
     else:
         _validation_case_flow()
 
@@ -213,6 +223,9 @@ def _render_result(assessment: Dict[str, Any], allow_save: bool,
     with c_right:
         render_level_card(assessment["risk_level"], assessment["level_meaning"],
                           assessment["score"])
+
+    # 结果仪表：指针扫过 + 八项贡献瀑布动画
+    result_gauge(assessment["indicators"])
 
     st.markdown(
         '<div class="pv-note">评分为 0—100 相对风险评分，用于企业间排序与初筛；'

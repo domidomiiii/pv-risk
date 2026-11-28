@@ -33,6 +33,8 @@ def _base_layout(title: str, height: int = 420) -> go.Layout:
         height=height,
         margin=dict(l=50, r=24, t=54, b=44),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        hoverlabel=dict(bgcolor="#141416", bordercolor="#ff4d00",
+                        font=dict(color="#f4f1eb", size=12)),
         xaxis=dict(gridcolor=PLOT_GRID, zerolinecolor=PLOT_GRID),
         yaxis=dict(gridcolor=PLOT_GRID, zerolinecolor=PLOT_GRID),
     )

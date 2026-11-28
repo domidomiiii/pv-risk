@@ -31,8 +31,12 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# 数据库初始化 → 侧栏（含动效开关）→ 按开关注入全局样式
+# 数据库初始化 → 首屏 CTA 跳转（URL query）→ 侧栏（含动效开关）→ 注入全局样式
 init_db()
+nav = st.query_params.get("nav")
+if nav in ("dashboard", "assessment", "empirical", "data"):
+    st.session_state["pv_nav"] = nav
+    st.query_params.clear()
 selection = render_sidebar()
 inject_css(motion=st.session_state.get("pv_motion", True))
 
